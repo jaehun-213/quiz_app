@@ -164,17 +164,182 @@ const hideLoading = () => {
     loadingOverlay.classList.add('hidden');
 };
 
+// ===== 뷰 전환 로직 =====
+
 // 뷰 전환 함수
 const showView = (viewId) => {
     // 모든 뷰 숨김
     const views = [loginView, registerView, quizView, resultsView, rankingView];
-    views.forEach(view => view.classList.add('hidden'));
+    views.forEach(view => {
+        if (view) {
+            view.classList.add('hidden');
+        }
+    });
     
     // 선택된 뷰만 표시
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.remove('hidden');
+        console.log(`뷰 전환: ${viewId}`);
+        
+        // 특정 뷰로 전환 시 추가 처리
+        handleViewTransition(viewId);
+    } else {
+        console.error(`뷰를 찾을 수 없습니다: ${viewId}`);
     }
+};
+
+// 뷰 전환 시 추가 처리 함수
+const handleViewTransition = (viewId) => {
+    switch (viewId) {
+        case 'login-view':
+            // 로그인 뷰로 전환 시 폼 초기화
+            resetLoginForm();
+            break;
+            
+        case 'register-view':
+            // 회원가입 뷰로 전환 시 폼 초기화
+            resetRegisterForm();
+            break;
+            
+        case 'quiz-view':
+            // 퀴즈 뷰로 전환 시 퀴즈 초기화
+            initializeQuiz();
+            break;
+            
+        case 'results-view':
+            // 결과 뷰로 전환 시 결과 표시
+            displayResults();
+            break;
+            
+        case 'ranking-view':
+            // 랭킹 뷰로 전환 시 랭킹 로드
+            loadRanking();
+            break;
+            
+        default:
+            console.log(`뷰 전환 처리 없음: ${viewId}`);
+    }
+};
+
+// 로그인 폼 초기화
+const resetLoginForm = () => {
+    if (loginForm) {
+        loginForm.reset();
+    }
+    // 에러 메시지 제거
+    clearFormErrors('login');
+};
+
+// 회원가입 폼 초기화
+const resetRegisterForm = () => {
+    if (registerForm) {
+        registerForm.reset();
+    }
+    // 에러 메시지 제거
+    clearFormErrors('register');
+};
+
+// 폼 에러 메시지 제거
+const clearFormErrors = (formType) => {
+    const form = formType === 'login' ? loginForm : registerForm;
+    if (form) {
+        const errorElements = form.querySelectorAll('.error-message');
+        errorElements.forEach(element => element.remove());
+        
+        // 입력 필드의 에러 스타일 제거
+        const inputs = form.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.classList.remove('error');
+        });
+    }
+};
+
+// 퀴즈 초기화 (다음 단계에서 구현)
+const initializeQuiz = () => {
+    console.log('퀴즈 초기화 (구현 예정)');
+    // 퀴즈 상태 초기화
+    currentQuestionIndex = 0;
+    userScore = 0;
+    userAnswers = [];
+    quizStartTime = new Date();
+    
+    // UI 초기화
+    updateQuizProgress();
+    updateScoreDisplay();
+};
+
+// 결과 표시 (다음 단계에서 구현)
+const displayResults = () => {
+    console.log('결과 표시 (구현 예정)');
+    // 최종 점수 및 통계 표시
+};
+
+// 랭킹 로드 (다음 단계에서 구현)
+const loadRanking = () => {
+    console.log('랭킹 로드 (구현 예정)');
+    // Firestore에서 랭킹 데이터 로드
+};
+
+// 퀴즈 진행률 업데이트
+const updateQuizProgress = () => {
+    if (questionCounter && progressFill) {
+        const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+        questionCounter.textContent = `문제 ${currentQuestionIndex + 1} / ${quizQuestions.length}`;
+        progressFill.style.width = `${progress}%`;
+    }
+};
+
+// 점수 표시 업데이트
+const updateScoreDisplay = () => {
+    if (currentScore) {
+        currentScore.textContent = userScore;
+    }
+};
+
+// 뷰 전환 애니메이션 (선택사항)
+const animateViewTransition = (viewId) => {
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        // 페이드 인 애니메이션
+        targetView.style.opacity = '0';
+        targetView.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            targetView.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            targetView.style.opacity = '1';
+            targetView.style.transform = 'translateY(0)';
+        }, 50);
+    }
+};
+
+// 현재 활성 뷰 확인
+const getCurrentView = () => {
+    const views = [loginView, registerView, quizView, resultsView, rankingView];
+    for (let view of views) {
+        if (view && !view.classList.contains('hidden')) {
+            return view.id;
+        }
+    }
+    return null;
+};
+
+// 뷰 전환 가능 여부 확인
+const canTransitionTo = (targetViewId) => {
+    const currentView = getCurrentView();
+    
+    // 특정 조건에 따른 뷰 전환 제한 로직
+    if (currentView === 'quiz-view' && targetViewId === 'login-view') {
+        // 퀴즈 중에는 로그인 뷰로 직접 전환 불가
+        return false;
+    }
+    
+    if (targetViewId === 'quiz-view' && !currentUser) {
+        // 로그인하지 않은 상태에서는 퀴즈 뷰로 전환 불가
+        return false;
+    }
+    
+    return true;
 };
 
 // ===== 이벤트 리스너 설정 함수 =====
