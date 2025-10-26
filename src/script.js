@@ -281,10 +281,175 @@ const initializeQuiz = () => {
     }
 };
 
-// 결과 표시 (다음 단계에서 구현)
+// ===== 퀴즈 결과 및 점수 저장 =====
+
+// 결과 표시
 const displayResults = () => {
-    console.log('결과 표시 (구현 예정)');
-    // 최종 점수 및 통계 표시
+    console.log('결과 표시');
+    
+    // 최종 점수 계산
+    const finalScore = userScore;
+    const totalQuestions = quizQuestions.length;
+    const correctAnswers = userAnswers.filter(answer => answer.isCorrect).length;
+    const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    
+    // UI 업데이트
+    updateResultsUI(finalScore, correctAnswers, totalQuestions, accuracy);
+    
+    // 결과 데이터 저장 (로컬)
+    const quizResult = {
+        finalScore,
+        correctAnswers,
+        totalQuestions,
+        accuracy,
+        userAnswers,
+        quizStartTime,
+        quizEndTime: new Date(),
+        duration: quizStartTime ? new Date() - quizStartTime : 0
+    };
+    
+    // 전역 변수에 저장 (필요시 사용)
+    window.currentQuizResult = quizResult;
+    
+    console.log('퀴즈 결과:', quizResult);
+};
+
+// 결과 UI 업데이트
+const updateResultsUI = (finalScore, correctAnswers, totalQuestions, accuracy) => {
+    // 최종 점수 표시
+    if (finalScore) {
+        finalScore.textContent = finalScore;
+    }
+    
+    // 정답 수 표시
+    if (correctCount) {
+        correctCount.textContent = correctAnswers;
+    }
+    
+    // 전체 문제 수 표시
+    if (totalQuestions) {
+        totalQuestions.textContent = totalQuestions;
+    }
+    
+    // 정답률 표시
+    if (accuracy) {
+        accuracy.textContent = accuracy;
+    }
+};
+
+// 점수를 Firestore에 저장
+const saveScoreToFirestore = async () => {
+    if (!currentUser) {
+        console.error('사용자가 로그인되지 않았습니다.');
+        showNotification('로그인 후 점수를 저장할 수 있습니다.', 'warning');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        // 점수 데이터 준비
+        const scoreData = {
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            score: userScore,
+            totalQuestions: quizQuestions.length,
+            correctAnswers: userAnswers.filter(answer => answer.isCorrect).length,
+            accuracy: quizQuestions.length > 0 ? Math.round((userAnswers.filter(answer => answer.isCorrect).length / quizQuestions.length) * 100) : 0,
+            quizStartTime: quizStartTime,
+            quizEndTime: new Date(),
+            duration: quizStartTime ? new Date() - quizStartTime : 0,
+            userAnswers: userAnswers,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+        
+        console.log('점수 저장 중:', scoreData);
+        
+        // Firestore에 저장
+        const docRef = await addDoc(collection(db, 'scores'), scoreData);
+        
+        console.log('점수가 성공적으로 저장되었습니다. 문서 ID:', docRef.id);
+        showNotification('점수가 저장되었습니다!', 'success');
+        
+        // 저장된 점수 ID를 결과에 추가
+        if (window.currentQuizResult) {
+            window.currentQuizResult.scoreId = docRef.id;
+        }
+        
+    } catch (error) {
+        console.error('점수 저장 실패:', error);
+        showNotification('점수 저장에 실패했습니다.', 'error');
+        
+        // 에러 타입별 처리
+        if (error.code === 'permission-denied') {
+            showNotification('점수 저장 권한이 없습니다.', 'error');
+        } else if (error.code === 'unavailable') {
+            showNotification('네트워크 연결을 확인해주세요.', 'error');
+        } else {
+            showNotification('점수 저장 중 오류가 발생했습니다.', 'error');
+        }
+    } finally {
+        hideLoading();
+    }
+};
+
+// 사용자 최고 점수 조회
+const getUserBestScore = async () => {
+    if (!currentUser) return null;
+    
+    try {
+        const scoresQuery = query(
+            collection(db, 'scores'),
+            orderBy('score', 'desc'),
+            limit(1)
+        );
+        
+        const querySnapshot = await getDocs(scoresQuery);
+        
+        if (!querySnapshot.empty) {
+            const bestScore = querySnapshot.docs[0].data();
+            return bestScore;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('최고 점수 조회 실패:', error);
+        return null;
+    }
+};
+
+// 사용자 점수 히스토리 조회
+const getUserScoreHistory = async (limitCount = 10) => {
+    if (!currentUser) return [];
+    
+    try {
+        const scoresQuery = query(
+            collection(db, 'scores'),
+            orderBy('createdAt', 'desc'),
+            limit(limitCount)
+        );
+        
+        const querySnapshot = await getDocs(scoresQuery);
+        const scores = [];
+        
+        querySnapshot.forEach((doc) => {
+            scores.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        return scores;
+    } catch (error) {
+        console.error('점수 히스토리 조회 실패:', error);
+        return [];
+    }
+};
+
+// 점수 저장 상태 확인
+const isScoreSaved = () => {
+    return window.currentQuizResult && window.currentQuizResult.scoreId;
 };
 
 // 랭킹 로드 (다음 단계에서 구현)
@@ -807,7 +972,15 @@ const saveUserAnswer = (answer) => {
 // 퀴즈 결과 표시
 const showQuizResults = () => {
     console.log('퀴즈 완료!');
+    
+    // 최종 점수 계산 및 표시
+    displayResults();
+    
+    // 결과 뷰로 전환
     showView('results-view');
+    
+    // 점수를 Firestore에 저장
+    saveScoreToFirestore();
 };
 
 // 인증 상태 확인 함수
@@ -1538,8 +1711,32 @@ const updateScore = (isCorrect) => {
     }
 };
 
+// 퀴즈 재시작 처리
 const handleRetryQuiz = () => {
-    console.log('퀴즈 재시작 처리 (구현 예정)');
+    console.log('퀴즈 재시작');
+    
+    // 퀴즈 상태 초기화
+    currentQuestionIndex = 0;
+    userScore = 0;
+    userAnswers = [];
+    quizStartTime = new Date();
+    
+    // UI 초기화
+    updateQuizProgress();
+    updateScoreDisplay();
+    
+    // 기존 피드백 제거
+    clearAnswerFeedback();
+    
+    // 퀴즈 뷰로 전환
+    showView('quiz-view');
+    
+    // 첫 번째 문제 로드
+    if (quizQuestions.length > 0) {
+        loadCurrentQuestion();
+    }
+    
+    showNotification('퀴즈를 다시 시작합니다!', 'info');
 };
 
 const loadRanking = () => {
