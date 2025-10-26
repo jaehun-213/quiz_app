@@ -374,21 +374,191 @@ const setupEventListeners = () => {
 // ===== 인증 상태 리스너 설정 =====
 const setupAuthStateListener = () => {
     onAuthStateChanged(auth, (user) => {
+        console.log('인증 상태 변경:', user ? '로그인됨' : '로그아웃됨');
+        
+        // 사용자 상태 업데이트
         currentUser = user;
         
         if (user) {
-            // 로그인된 상태
-            userInfo.textContent = `안녕하세요, ${user.email}님`;
-            userInfo.classList.remove('hidden');
-            logoutBtn.classList.remove('hidden');
-            showView('quiz-view');
+            // 로그인된 상태 처리
+            handleUserLogin(user);
         } else {
-            // 로그아웃된 상태
-            userInfo.classList.add('hidden');
-            logoutBtn.classList.add('hidden');
-            showView('login-view');
+            // 로그아웃된 상태 처리
+            handleUserLogout();
         }
     });
+};
+
+// 사용자 로그인 처리
+const handleUserLogin = (user) => {
+    try {
+        console.log('사용자 로그인 처리:', user.email);
+        
+        // 사용자 정보 UI 업데이트
+        updateUserInfo(user);
+        
+        // 헤더 UI 업데이트
+        updateHeaderForLoggedInUser();
+        
+        // 퀴즈 상태 초기화 (새 로그인 시)
+        if (!quizStartTime) {
+            initializeQuizForNewUser();
+        }
+        
+        // 적절한 뷰로 전환
+        const currentView = getCurrentView();
+        if (shouldRedirectToQuiz(currentView)) {
+            showView('quiz-view');
+        }
+        
+        // 성공 알림 (새 로그인인 경우에만)
+        if (!currentView || currentView === 'login-view' || currentView === 'register-view') {
+            showNotification(`환영합니다, ${user.email}님!`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('로그인 처리 중 오류:', error);
+        showNotification('로그인 처리 중 오류가 발생했습니다.', 'error');
+    }
+};
+
+// 사용자 로그아웃 처리
+const handleUserLogout = () => {
+    try {
+        console.log('사용자 로그아웃 처리');
+        
+        // 사용자 정보 UI 초기화
+        clearUserInfo();
+        
+        // 헤더 UI 초기화
+        updateHeaderForLoggedOutUser();
+        
+        // 퀴즈 상태 초기화
+        resetQuizState();
+        
+        // 로그인 뷰로 전환
+        showView('login-view');
+        
+        // 로그아웃 알림
+        showNotification('로그아웃되었습니다.', 'info');
+        
+    } catch (error) {
+        console.error('로그아웃 처리 중 오류:', error);
+        showNotification('로그아웃 처리 중 오류가 발생했습니다.', 'error');
+    }
+};
+
+// 사용자 정보 UI 업데이트
+const updateUserInfo = (user) => {
+    if (userInfo) {
+        // 이메일에서 사용자명 추출 (이메일 앞부분)
+        const username = user.email.split('@')[0];
+        userInfo.textContent = `안녕하세요, ${username}님`;
+        userInfo.title = `이메일: ${user.email}`;
+    }
+};
+
+// 사용자 정보 UI 초기화
+const clearUserInfo = () => {
+    if (userInfo) {
+        userInfo.textContent = '';
+        userInfo.title = '';
+    }
+};
+
+// 로그인된 사용자용 헤더 업데이트
+const updateHeaderForLoggedInUser = () => {
+    if (userInfo) {
+        userInfo.classList.remove('hidden');
+    }
+    if (logoutBtn) {
+        logoutBtn.classList.remove('hidden');
+    }
+};
+
+// 로그아웃된 사용자용 헤더 업데이트
+const updateHeaderForLoggedOutUser = () => {
+    if (userInfo) {
+        userInfo.classList.add('hidden');
+    }
+    if (logoutBtn) {
+        logoutBtn.classList.add('hidden');
+    }
+};
+
+// 새 사용자용 퀴즈 초기화
+const initializeQuizForNewUser = () => {
+    console.log('새 사용자용 퀴즈 초기화');
+    
+    // 퀴즈 상태 초기화
+    currentQuestionIndex = 0;
+    userScore = 0;
+    userAnswers = [];
+    quizStartTime = new Date();
+    
+    // UI 초기화
+    updateQuizProgress();
+    updateScoreDisplay();
+    
+    // 퀴즈 데이터가 있는 경우 첫 번째 문제 로드
+    if (quizQuestions.length > 0) {
+        loadCurrentQuestion();
+    }
+};
+
+// 퀴즈로 리다이렉트해야 하는지 확인
+const shouldRedirectToQuiz = (currentView) => {
+    // 특정 뷰에서는 퀴즈로 리다이렉트하지 않음
+    const restrictedViews = ['results-view', 'ranking-view'];
+    
+    if (restrictedViews.includes(currentView)) {
+        return false;
+    }
+    
+    // 기본적으로는 퀴즈로 리다이렉트
+    return true;
+};
+
+// 현재 문제 로드 (다음 단계에서 구현)
+const loadCurrentQuestion = () => {
+    console.log('현재 문제 로드 (구현 예정)');
+    // 퀴즈 문제 로드 로직
+};
+
+// 인증 상태 확인 함수
+const checkAuthState = () => {
+    return new Promise((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            unsubscribe(); // 한 번만 실행하고 구독 해제
+            resolve(user);
+        });
+    });
+};
+
+// 인증 상태 대기 함수
+const waitForAuthState = async () => {
+    try {
+        const user = await checkAuthState();
+        return user;
+    } catch (error) {
+        console.error('인증 상태 확인 실패:', error);
+        return null;
+    }
+};
+
+// 사용자 인증 상태 확인
+const isUserAuthenticated = () => {
+    return currentUser !== null;
+};
+
+// 사용자 이메일 가져오기
+const getUserEmail = () => {
+    return currentUser ? currentUser.email : null;
+};
+
+// 사용자 UID 가져오기
+const getUserUID = () => {
+    return currentUser ? currentUser.uid : null;
 };
 
 // ===== 퀴즈 데이터 로드 함수 =====
