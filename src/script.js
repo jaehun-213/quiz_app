@@ -561,14 +561,153 @@ const getUserUID = () => {
     return currentUser ? currentUser.uid : null;
 };
 
+// ===== 퀴즈 데이터 =====
+const quizQuestions = [
+    // 코딩 관련 문제들
+    {
+        id: 1,
+        category: '코딩',
+        type: 'multiple-choice',
+        question: '스택(Stack)의 LIFO 특징에 대한 설명으로 올바른 것은?',
+        options: [
+            'Last In First Out - 마지막에 들어간 데이터가 먼저 나온다',
+            'First In First Out - 먼저 들어간 데이터가 먼저 나온다',
+            'Last In Last Out - 마지막에 들어간 데이터가 마지막에 나온다',
+            'First In Last Out - 먼저 들어간 데이터가 마지막에 나온다'
+        ],
+        correctAnswer: 0,
+        explanation: '스택은 LIFO(Last In First Out) 구조로, 마지막에 들어간 데이터가 먼저 나오는 자료구조입니다.'
+    },
+    {
+        id: 2,
+        category: '코딩',
+        type: 'fill-in-blank',
+        question: '다음 코드의 출력 결과를 예측해보세요.\n\n```javascript\nlet arr = [1, 2, 3, 4, 5];\nlet result = arr.filter(x => x % 2 === 0).map(x => x * 2);\nconsole.log(result);\n```\n\n출력 결과: [____]',
+        correctAnswer: '[4, 8]',
+        explanation: 'filter로 짝수만 선택([2, 4])하고, map으로 각 요소에 2를 곱하여 [4, 8]이 됩니다.'
+    },
+    {
+        id: 3,
+        category: '코딩',
+        type: 'short-answer',
+        question: '다음 코드에서 발생할 수 있는 문제점을 설명하고 해결 방법을 제시해주세요.\n\n```javascript\nfunction divide(a, b) {\n    return a / b;\n}\n\nconsole.log(divide(10, 0));\n```',
+        modelAnswer: '문제점: 0으로 나누기로 인한 Infinity 반환\n해결방법: 0 체크 후 예외 처리 또는 기본값 반환\n\n예시:\n```javascript\nfunction divide(a, b) {\n    if (b === 0) {\n        throw new Error("0으로 나눌 수 없습니다");\n    }\n    return a / b;\n}\n```',
+        explanation: '0으로 나누기는 수학적으로 정의되지 않으므로 적절한 예외 처리가 필요합니다.'
+    },
+    {
+        id: 4,
+        category: '코딩',
+        type: 'multiple-choice',
+        question: '다음 중 시간복잡도가 O(n²)인 정렬 알고리즘은?',
+        options: [
+            '퀵 정렬 (Quick Sort)',
+            '병합 정렬 (Merge Sort)',
+            '버블 정렬 (Bubble Sort)',
+            '힙 정렬 (Heap Sort)'
+        ],
+        correctAnswer: 2,
+        explanation: '버블 정렬은 최악의 경우 O(n²)의 시간복잡도를 가집니다. 나머지는 모두 O(n log n)입니다.'
+    },
+    {
+        id: 5,
+        category: '코딩',
+        type: 'fill-in-blank',
+        question: '다음은 이진 탐색 트리(BST)의 삽입 연산입니다. 빈칸을 채워주세요.\n\n```javascript\nfunction insertNode(root, value) {\n    if (root === null) {\n        return new Node(value);\n    }\n    \n    if (value < root.value) {\n        root.left = insertNode(root.left, value);\n    } else if (value > root.value) {\n        root.right = insertNode(root.right, value);\n    }\n    \n    return ____;\n}\n```',
+        correctAnswer: 'root',
+        explanation: '삽입 후에는 루트 노드를 반환해야 합니다.'
+    },
+    
+    // 컴퓨터 구조 관련 문제들
+    {
+        id: 6,
+        category: '컴퓨터 구조',
+        type: 'multiple-choice',
+        question: 'CPU의 주요 구성 요소가 아닌 것은?',
+        options: [
+            'ALU (Arithmetic Logic Unit)',
+            'CU (Control Unit)',
+            'Register',
+            'Hard Disk'
+        ],
+        correctAnswer: 3,
+        explanation: '하드 디스크는 저장 장치로 CPU의 구성 요소가 아닙니다. CPU는 ALU, CU, Register 등으로 구성됩니다.'
+    },
+    {
+        id: 7,
+        category: '컴퓨터 구조',
+        type: 'fill-in-blank',
+        question: '메모리 계층 구조에서 가장 빠른 접근 속도를 가진 저장 장치는 ____입니다.',
+        correctAnswer: '레지스터',
+        explanation: '메모리 계층 구조는 레지스터 > 캐시 > 메인 메모리 > 보조 저장장치 순으로 속도가 느려집니다.'
+    },
+    {
+        id: 8,
+        category: '컴퓨터 구조',
+        type: 'short-answer',
+        question: '캐시 메모리의 역할과 L1, L2, L3 캐시의 차이점을 설명해주세요.',
+        modelAnswer: '캐시 메모리는 CPU와 메인 메모리 사이의 속도 차이를 완화하는 고속 버퍼입니다.\n\n- L1 캐시: CPU 코어 내부, 가장 빠르고 작음 (32KB-64KB)\n- L2 캐시: CPU 코어 근처, 중간 속도와 크기 (256KB-1MB)\n- L3 캐시: 여러 코어가 공유, 상대적으로 느리지만 큼 (8MB-32MB)\n\n계층적 구조로 자주 사용되는 데이터를 빠른 저장소에 보관하여 전체 성능을 향상시킵니다.',
+        explanation: '캐시는 메모리 계층 구조의 핵심으로, 데이터 지역성 원리를 활용합니다.'
+    },
+    {
+        id: 9,
+        category: '컴퓨터 구조',
+        type: 'multiple-choice',
+        question: '다음 중 폰 노이만 아키텍처의 특징이 아닌 것은?',
+        options: [
+            '프로그램과 데이터를 같은 메모리에 저장',
+            '순차적 명령어 실행',
+            '하버드 아키텍처와 동일한 구조',
+            '저장된 프로그램 개념'
+        ],
+        correctAnswer: 2,
+        explanation: '하버드 아키텍처는 프로그램과 데이터를 별도 메모리에 저장하는 구조로, 폰 노이만 아키텍처와는 다릅니다.'
+    },
+    {
+        id: 10,
+        category: '컴퓨터 구조',
+        type: 'fill-in-blank',
+        question: '명령어 실행 과정에서 명령어를 메모리에서 가져오는 단계를 ____라고 합니다.',
+        correctAnswer: 'Fetch',
+        explanation: '명령어 실행 과정은 Fetch(인출) → Decode(해독) → Execute(실행) → Write Back(쓰기) 순서로 진행됩니다.'
+    },
+    {
+        id: 11,
+        category: '코딩',
+        type: 'multiple-choice',
+        question: '다음 JavaScript 코드의 실행 결과는?\n\n```javascript\nlet x = 5;\nlet y = 10;\n[x, y] = [y, x];\nconsole.log(x, y);\n```',
+        options: [
+            '5 10',
+            '10 5',
+            'undefined undefined',
+            '에러 발생'
+        ],
+        correctAnswer: 1,
+        explanation: '구조 분해 할당을 사용한 변수 교환으로, x와 y의 값이 서로 바뀝니다.'
+    },
+    {
+        id: 12,
+        category: '컴퓨터 구조',
+        type: 'short-answer',
+        question: '파이프라인(Pipeline) 처리의 장점과 단점을 설명해주세요.',
+        modelAnswer: '장점:\n- 명령어 처리량(Throughput) 증가\n- CPU 활용률 향상\n- 전체적인 성능 향상\n\n단점:\n- 파이프라인 해저드 발생 가능\n- 복잡한 제어 회로 필요\n- 분기 예측 실패 시 성능 저하\n- 하드웨어 복잡도 증가',
+        explanation: '파이프라인은 명령어를 여러 단계로 나누어 병렬 처리하는 기법입니다.'
+    }
+];
+
 // ===== 퀴즈 데이터 로드 함수 =====
 const loadQuizData = () => {
-    // 하드코딩된 퀴즈 데이터 (나중에 확장 가능)
-    quizQuestions = [
-        // 퀴즈 데이터는 다음 단계에서 추가
-    ];
-    
+    // 퀴즈 데이터는 이미 상수로 정의되어 있으므로 별도 로드 불필요
     console.log('퀴즈 데이터 로드 완료:', quizQuestions.length, '개 문제');
+    console.log('카테고리별 문제 수:');
+    console.log('- 코딩:', quizQuestions.filter(q => q.category === '코딩').length, '개');
+    console.log('- 컴퓨터 구조:', quizQuestions.filter(q => q.category === '컴퓨터 구조').length, '개');
+    
+    // 문제 타입별 통계
+    const typeStats = quizQuestions.reduce((acc, q) => {
+        acc[q.type] = (acc[q.type] || 0) + 1;
+        return acc;
+    }, {});
+    console.log('문제 타입별 통계:', typeStats);
 };
 
 // ===== 인증 관련 함수들 =====
