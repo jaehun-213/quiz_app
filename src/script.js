@@ -540,7 +540,7 @@ const setupEventListeners = () => {
     viewRanking.addEventListener('click', () => showView('ranking-view'));
     
     // 랭킹 관련 이벤트
-    refreshRanking.addEventListener('click', loadRanking);
+    refreshRanking.addEventListener('click', refreshRanking);
     backToQuiz.addEventListener('click', () => showView('quiz-view'));
     backToHome.addEventListener('click', () => showView('login-view'));
 };
@@ -1739,8 +1739,256 @@ const handleRetryQuiz = () => {
     showNotification('퀴즈를 다시 시작합니다!', 'info');
 };
 
-const loadRanking = () => {
-    console.log('랭킹 로드 처리 (구현 예정)');
+// ===== 랭킹 보드 기능 =====
+
+// 랭킹 로드
+const loadRanking = async () => {
+    try {
+        console.log('랭킹 로드 시작');
+        showLoading();
+        
+        // 랭킹 데이터 가져오기
+        const rankings = await getTopRankings(10);
+        
+        // 랭킹 UI 렌더링
+        renderRankingList(rankings);
+        
+        // 마지막 업데이트 시간 표시
+        updateLastUpdatedTime();
+        
+        console.log('랭킹 로드 완료:', rankings.length, '개');
+        
+    } catch (error) {
+        console.error('랭킹 로드 실패:', error);
+        showNotification('랭킹을 불러오는데 실패했습니다.', 'error');
+        renderRankingError();
+    } finally {
+        hideLoading();
+    }
+};
+
+// 상위 랭킹 조회
+const getTopRankings = async (limit = 10) => {
+    try {
+        const rankingsQuery = query(
+            collection(db, 'scores'),
+            orderBy('score', 'desc'),
+            orderBy('createdAt', 'desc'), // 같은 점수일 때 최신순
+            limit(limit)
+        );
+        
+        const querySnapshot = await getDocs(rankingsQuery);
+        const rankings = [];
+        
+        querySnapshot.forEach((doc, index) => {
+            const data = doc.data();
+            rankings.push({
+                id: doc.id,
+                rank: index + 1,
+                userId: data.userId,
+                userEmail: data.userEmail,
+                score: data.score,
+                totalQuestions: data.totalQuestions,
+                correctAnswers: data.correctAnswers,
+                accuracy: data.accuracy,
+                duration: data.duration,
+                createdAt: data.createdAt,
+                quizEndTime: data.quizEndTime
+            });
+        });
+        
+        return rankings;
+    } catch (error) {
+        console.error('랭킹 조회 실패:', error);
+        throw error;
+    }
+};
+
+// 랭킹 리스트 렌더링
+const renderRankingList = (rankings) => {
+    if (!rankingListContent) {
+        console.error('랭킹 리스트 컨테이너를 찾을 수 없습니다.');
+        return;
+    }
+    
+    // 기존 내용 제거
+    rankingListContent.innerHTML = '';
+    
+    if (rankings.length === 0) {
+        renderEmptyRanking();
+        return;
+    }
+    
+    // 랭킹 아이템 생성
+    rankings.forEach((ranking, index) => {
+        const rankingItem = createRankingItem(ranking, index);
+        rankingListContent.appendChild(rankingItem);
+    });
+    
+    // 현재 사용자 하이라이트
+    highlightCurrentUser(rankings);
+};
+
+// 랭킹 아이템 생성
+const createRankingItem = (ranking, index) => {
+    const item = document.createElement('div');
+    item.className = 'ranking-item';
+    item.dataset.userId = ranking.userId;
+    
+    // 순위에 따른 스타일 적용
+    if (index < 3) {
+        item.classList.add(`rank-${index + 1}`);
+    }
+    
+    // 사용자명 추출 (이메일에서)
+    const username = ranking.userEmail.split('@')[0];
+    
+    // 시간 포맷팅
+    const timeAgo = formatTimeAgo(ranking.quizEndTime);
+    
+    // 정확도 포맷팅
+    const accuracyText = ranking.accuracy ? `${ranking.accuracy}%` : '-';
+    
+    // 소요 시간 포맷팅
+    const durationText = formatDuration(ranking.duration);
+    
+    item.innerHTML = `
+        <span class="rank">${ranking.rank}</span>
+        <span class="user">${username}</span>
+        <span class="score">${ranking.score}</span>
+        <span class="date">${timeAgo}</span>
+    `;
+    
+    // 상세 정보 툴팁
+    item.title = `정답: ${ranking.correctAnswers}/${ranking.totalQuestions} (${accuracyText})\n소요시간: ${durationText}`;
+    
+    return item;
+};
+
+// 빈 랭킹 표시
+const renderEmptyRanking = () => {
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'empty-ranking';
+    emptyMessage.style.textAlign = 'center';
+    emptyMessage.style.padding = '2rem';
+    emptyMessage.style.color = '#666';
+    
+    emptyMessage.innerHTML = `
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🏆</div>
+        <h3>아직 랭킹이 없습니다</h3>
+        <p>첫 번째로 퀴즈를 완료해보세요!</p>
+    `;
+    
+    rankingListContent.appendChild(emptyMessage);
+};
+
+// 랭킹 에러 표시
+const renderRankingError = () => {
+    if (!rankingListContent) return;
+    
+    const errorMessage = document.createElement('div');
+    errorMessage.className = 'ranking-error';
+    errorMessage.style.textAlign = 'center';
+    errorMessage.style.padding = '2rem';
+    errorMessage.style.color = '#dc3545';
+    
+    errorMessage.innerHTML = `
+        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+        <h3>랭킹을 불러올 수 없습니다</h3>
+        <p>네트워크 연결을 확인하고 다시 시도해주세요.</p>
+        <button onclick="loadRanking()" class="btn btn-primary" style="margin-top: 1rem;">
+            다시 시도
+        </button>
+    `;
+    
+    rankingListContent.innerHTML = '';
+    rankingListContent.appendChild(errorMessage);
+};
+
+// 현재 사용자 하이라이트
+const highlightCurrentUser = (rankings) => {
+    if (!currentUser) return;
+    
+    const currentUserItem = document.querySelector(`[data-user-id="${currentUser.uid}"]`);
+    if (currentUserItem) {
+        currentUserItem.classList.add('current-user');
+        currentUserItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
+
+// 마지막 업데이트 시간 표시
+const updateLastUpdatedTime = () => {
+    if (lastUpdatedTime) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        lastUpdatedTime.textContent = timeString;
+    }
+};
+
+// 시간 포맷팅 (상대적 시간)
+const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return '-';
+    
+    const now = new Date();
+    const time = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const diffMs = now - time;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 1) {
+        return '방금 전';
+    } else if (diffMinutes < 60) {
+        return `${diffMinutes}분 전`;
+    } else if (diffHours < 24) {
+        return `${diffHours}시간 전`;
+    } else if (diffDays < 7) {
+        return `${diffDays}일 전`;
+    } else {
+        return time.toLocaleDateString('ko-KR');
+    }
+};
+
+// 소요 시간 포맷팅
+const formatDuration = (durationMs) => {
+    if (!durationMs) return '-';
+    
+    const minutes = Math.floor(durationMs / (1000 * 60));
+    const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
+    
+    if (minutes > 0) {
+        return `${minutes}분 ${seconds}초`;
+    } else {
+        return `${seconds}초`;
+    }
+};
+
+// 랭킹 새로고침
+const refreshRanking = () => {
+    console.log('랭킹 새로고침');
+    loadRanking();
+    showNotification('랭킹을 새로고침했습니다.', 'info');
+};
+
+// 사용자별 랭킹 조회
+const getUserRanking = async (userId) => {
+    try {
+        const allRankings = await getTopRankings(1000); // 충분히 큰 수
+        const userRanking = allRankings.find(ranking => ranking.userId === userId);
+        
+        if (userRanking) {
+            return userRanking.rank;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('사용자 랭킹 조회 실패:', error);
+        return null;
+    }
 };
 
 // ===== 앱 시작 =====

@@ -510,6 +510,75 @@ body {
     background: #f8f9ff;
 }
 
+/* 랭킹 아이템 특별 스타일 */
+.ranking-item.rank-1 {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    border: 2px solid #ffd700;
+    font-weight: 600;
+}
+
+.ranking-item.rank-2 {
+    background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+    border: 2px solid #c0c0c0;
+    font-weight: 600;
+}
+
+.ranking-item.rank-3 {
+    background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+    border: 2px solid #cd7f32;
+    font-weight: 600;
+}
+
+.ranking-item.current-user {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: 2px solid #667eea !important;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.ranking-item.current-user .rank,
+.ranking-item.current-user .user,
+.ranking-item.current-user .score,
+.ranking-item.current-user .date {
+    color: white !important;
+}
+
+/* 빈 랭킹 스타일 */
+.empty-ranking {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #666;
+}
+
+.empty-ranking h3 {
+    margin: 1rem 0 0.5rem 0;
+    color: #333;
+}
+
+.empty-ranking p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* 랭킹 에러 스타일 */
+.ranking-error {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #dc3545;
+}
+
+.ranking-error h3 {
+    margin: 1rem 0 0.5rem 0;
+    color: #dc3545;
+}
+
+.ranking-error p {
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
 .rank {
     font-weight: 600;
     text-align: center;
