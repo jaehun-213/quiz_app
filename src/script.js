@@ -1,30 +1,30 @@
 // IT 기술 퀴즈 앱 - 메인 JavaScript 모듈
 // Vanilla JavaScript + Firebase + ES6 모듈
 
-// ===== Firebase 모듈 Import =====
-import { 
-    auth, 
-    db, 
-    validateFirebaseConfig, 
-    checkFirebaseConnection 
-} from './firebase-config.js';
+// ===== Firebase 전역 변수 사용 =====
+// Firebase는 HTML에서 CDN으로 로드되어 전역 변수로 설정됨
+const auth = window.auth;
+const db = window.db;
+const createUserWithEmailAndPassword = window.createUserWithEmailAndPassword;
+const signInWithEmailAndPassword = window.signInWithEmailAndPassword;
+const signOut = window.signOut;
+const onAuthStateChanged = window.onAuthStateChanged;
+const collection = window.collection;
+const addDoc = window.addDoc;
+const getDocs = window.getDocs;
+const query = window.query;
+const orderBy = window.orderBy;
+const limit = window.limit;
+const serverTimestamp = window.serverTimestamp;
 
-import {
-    // Authentication 관련
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    
-    // Firestore 관련
-    collection,
-    addDoc,
-    getDocs,
-    query,
-    orderBy,
-    limit,
-    serverTimestamp
-} from 'firebase/firestore';
+// ===== Firebase 설정 검증 함수 =====
+const validateFirebaseConfig = () => {
+    if (!auth || !db) {
+        console.error('Firebase가 제대로 초기화되지 않았습니다.');
+        return false;
+    }
+    return true;
+};
 
 // ===== DOM 요소 변수 선언 =====
 
@@ -102,32 +102,38 @@ let quizQuestions = [];
 let userAnswers = [];
 let quizStartTime = null;
 
+
 // ===== 초기화 함수 =====
 const initializeApp = async () => {
     try {
+        console.log('앱 초기화 시작');
+        
+        // Firebase가 로드될 때까지 잠시 대기
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Firebase 설정 검증
+        console.log('Firebase 설정 검증 중...');
         if (!validateFirebaseConfig()) {
+            console.error('Firebase 설정 검증 실패');
             showNotification('Firebase 설정을 확인해주세요.', 'error');
             return;
         }
-
-        // Firebase 연결 확인
-        const isConnected = await checkFirebaseConnection();
-        if (!isConnected) {
-            showNotification('Firebase 연결에 실패했습니다.', 'error');
-            return;
-        }
+        console.log('Firebase 설정 검증 완료');
 
         // 인증 상태 리스너 설정
+        console.log('인증 상태 리스너 설정 중...');
         setupAuthStateListener();
         
         // 이벤트 리스너 설정
+        console.log('이벤트 리스너 설정 중...');
         setupEventListeners();
         
         // 실시간 입력 검증 설정
+        console.log('실시간 입력 검증 설정 중...');
         setupRealTimeValidation();
         
         // 퀴즈 데이터 로드
+        console.log('퀴즈 데이터 로드 중...');
         loadQuizData();
         
         console.log('앱 초기화 완료');
@@ -171,6 +177,8 @@ const hideLoading = () => {
 
 // 뷰 전환 함수
 const showView = (viewId) => {
+    console.log(`뷰 전환 시도: ${viewId}`);
+    
     // 모든 뷰 숨김
     const views = [loginView, registerView, quizView, resultsView, rankingView];
     views.forEach(view => {
@@ -183,12 +191,19 @@ const showView = (viewId) => {
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.remove('hidden');
-        console.log(`뷰 전환: ${viewId}`);
+        console.log(`뷰 전환 성공: ${viewId}`);
         
         // 특정 뷰로 전환 시 추가 처리
         handleViewTransition(viewId);
     } else {
         console.error(`뷰를 찾을 수 없습니다: ${viewId}`);
+        console.log('사용 가능한 뷰들:', {
+            'login-view': document.getElementById('login-view'),
+            'register-view': document.getElementById('register-view'),
+            'quiz-view': document.getElementById('quiz-view'),
+            'results-view': document.getElementById('results-view'),
+            'ranking-view': document.getElementById('ranking-view')
+        });
     }
 };
 
@@ -516,15 +531,57 @@ const canTransitionTo = (targetViewId) => {
 
 // ===== 이벤트 리스너 설정 함수 =====
 const setupEventListeners = () => {
+    console.log('이벤트 리스너 설정 시작');
+    
+    // DOM 요소 존재 확인
+    console.log('DOM 요소 확인:');
+    console.log('- loginForm:', loginForm);
+    console.log('- registerForm:', registerForm);
+    console.log('- showRegister:', showRegister);
+    console.log('- showLogin:', showLogin);
+    console.log('- logoutBtn:', logoutBtn);
+    
     // 알림 닫기 버튼
-    closeNotification.addEventListener('click', hideNotification);
+    if (closeNotification) {
+        closeNotification.addEventListener('click', hideNotification);
+    }
     
     // 인증 관련 이벤트
-    loginForm.addEventListener('submit', handleLogin);
-    registerForm.addEventListener('submit', handleRegister);
-    showRegister.addEventListener('click', () => showView('register-view'));
-    showLogin.addEventListener('click', () => showView('login-view'));
-    logoutBtn.addEventListener('click', handleLogout);
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+        console.log('로그인 폼 이벤트 리스너 추가됨');
+    } else {
+        console.error('로그인 폼을 찾을 수 없습니다!');
+    }
+    
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegister);
+        console.log('회원가입 폼 이벤트 리스너 추가됨');
+    } else {
+        console.error('회원가입 폼을 찾을 수 없습니다!');
+    }
+    
+    if (showRegister) {
+        showRegister.addEventListener('click', () => {
+            console.log('회원가입 버튼 클릭됨');
+            showView('register-view');
+        });
+    } else {
+        console.error('회원가입 버튼을 찾을 수 없습니다!');
+    }
+    
+    if (showLogin) {
+        showLogin.addEventListener('click', () => {
+            console.log('로그인 버튼 클릭됨');
+            showView('login-view');
+        });
+    } else {
+        console.error('로그인 버튼을 찾을 수 없습니다!');
+    }
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
     
     // 퀴즈 관련 이벤트
     submitBtn.addEventListener('click', handleSubmitAnswer);
