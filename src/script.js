@@ -88,7 +88,7 @@ const retryQuiz = document.getElementById('retry-quiz');
 const viewRanking = document.getElementById('view-ranking');
 
 // 랭킹 관련 요소들
-const refreshRanking = document.getElementById('refresh-ranking');
+const refreshRankingBtn = document.getElementById('refresh-ranking');
 const lastUpdatedTime = document.getElementById('last-updated-time');
 const rankingListContent = document.getElementById('ranking-list-content');
 const backToQuiz = document.getElementById('back-to-quiz');
@@ -452,11 +452,6 @@ const isScoreSaved = () => {
     return window.currentQuizResult && window.currentQuizResult.scoreId;
 };
 
-// 랭킹 로드 (다음 단계에서 구현)
-const loadRanking = () => {
-    console.log('랭킹 로드 (구현 예정)');
-    // Firestore에서 랭킹 데이터 로드
-};
 
 // 퀴즈 진행률 업데이트
 const updateQuizProgress = () => {
@@ -540,7 +535,7 @@ const setupEventListeners = () => {
     viewRanking.addEventListener('click', () => showView('ranking-view'));
     
     // 랭킹 관련 이벤트
-    refreshRanking.addEventListener('click', refreshRanking);
+    refreshRankingBtn.addEventListener('click', refreshRanking);
     backToQuiz.addEventListener('click', () => showView('quiz-view'));
     backToHome.addEventListener('click', () => showView('login-view'));
 };
@@ -1020,7 +1015,7 @@ const getUserUID = () => {
 };
 
 // ===== 퀴즈 데이터 =====
-const quizQuestions = [
+const QUIZ_QUESTIONS = [
     // 코딩 관련 문제들
     {
         id: 1,
@@ -1154,7 +1149,10 @@ const quizQuestions = [
 
 // ===== 퀴즈 데이터 로드 함수 =====
 const loadQuizData = () => {
-    // 퀴즈 데이터는 이미 상수로 정의되어 있으므로 별도 로드 불필요
+    // 퀴즈 데이터를 전역 배열에 복사
+    quizQuestions.length = 0; // 기존 배열 초기화
+    quizQuestions.push(...QUIZ_QUESTIONS); // 새 데이터 추가
+    
     console.log('퀴즈 데이터 로드 완료:', quizQuestions.length, '개 문제');
     console.log('카테고리별 문제 수:');
     console.log('- 코딩:', quizQuestions.filter(q => q.category === '코딩').length, '개');
@@ -1966,6 +1964,7 @@ const formatDuration = (durationMs) => {
         return `${seconds}초`;
     }
 };
+
 
 // 랭킹 새로고침
 const refreshRanking = () => {
