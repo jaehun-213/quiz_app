@@ -3,32 +3,59 @@
 
 // ===== Firebase 전역 변수 사용 =====
 // Firebase는 HTML에서 CDN으로 로드되어 전역 변수로 설정됨
-const auth = window.auth;
-const db = window.db;
-const createUserWithEmailAndPassword = window.createUserWithEmailAndPassword;
-const signInWithEmailAndPassword = window.signInWithEmailAndPassword;
-const signOut = window.signOut;
-const onAuthStateChanged = window.onAuthStateChanged;
-const collection = window.collection;
-const addDoc = window.addDoc;
-const getDocs = window.getDocs;
-const query = window.query;
-const orderBy = window.orderBy;
-const limit = window.limit;
-const serverTimestamp = window.serverTimestamp;
+let auth, db;
+let createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged;
+let collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp;
+
+// Firebase 변수들을 안전하게 가져오는 함수
+const getFirebaseVariables = () => {
+    console.log('Firebase 변수들 가져오기 시작');
+    console.log('window.auth:', window.auth);
+    console.log('window.db:', window.db);
+    
+    auth = window.auth;
+    db = window.db;
+    createUserWithEmailAndPassword = window.createUserWithEmailAndPassword;
+    signInWithEmailAndPassword = window.signInWithEmailAndPassword;
+    signOut = window.signOut;
+    onAuthStateChanged = window.onAuthStateChanged;
+    collection = window.collection;
+    addDoc = window.addDoc;
+    getDocs = window.getDocs;
+    query = window.query;
+    orderBy = window.orderBy;
+    limit = window.limit;
+    serverTimestamp = window.serverTimestamp;
+    
+    console.log('Firebase 변수들 가져오기 완료');
+    console.log('가져온 auth:', auth);
+    console.log('가져온 db:', db);
+};
 
 // ===== Firebase 설정 검증 함수 =====
 const validateFirebaseConfig = () => {
-    if (!auth || !db) {
-        console.error('Firebase가 제대로 초기화되지 않았습니다.');
+    console.log('Firebase 변수 상태 확인:');
+    console.log('- auth:', auth);
+    console.log('- db:', db);
+    console.log('- createUserWithEmailAndPassword:', createUserWithEmailAndPassword);
+    console.log('- signInWithEmailAndPassword:', signInWithEmailAndPassword);
+    
+    // Firebase 함수들이 존재하는지 확인 (로컬 모드 포함)
+    if (!createUserWithEmailAndPassword || !signInWithEmailAndPassword) {
+        console.error('Firebase 함수들이 제대로 초기화되지 않았습니다.');
+        console.log('createUserWithEmailAndPassword 존재 여부:', !!createUserWithEmailAndPassword);
+        console.log('signInWithEmailAndPassword 존재 여부:', !!signInWithEmailAndPassword);
         return false;
     }
+    
+    console.log('Firebase 설정 검증 성공 (로컬 모드 포함)');
     return true;
 };
 
 // ===== DOM 요소 변수 선언 =====
 
 // 뷰 섹션들
+const homeView = document.getElementById('home-view');
 const loginView = document.getElementById('login-view');
 const registerView = document.getElementById('register-view');
 const quizView = document.getElementById('quiz-view');
@@ -44,6 +71,15 @@ const closeNotification = document.getElementById('close-notification');
 // 헤더 요소들
 const userInfo = document.getElementById('user-info');
 const logoutBtn = document.getElementById('logout-btn');
+
+// 홈 화면 요소들
+const homeUserInfo = document.getElementById('home-user-info');
+const homeUserName = document.getElementById('home-user-name');
+const homeLogoutBtn = document.getElementById('home-logout-btn');
+const homeGuestInfo = document.getElementById('home-guest-info');
+const startQuizBtn = document.getElementById('start-quiz-btn');
+const viewRankingBtn = document.getElementById('view-ranking-btn');
+const homeLoginBtn = document.getElementById('home-login-btn');
 
 // 인증 관련 요소들
 const loginForm = document.getElementById('login-form');
@@ -71,9 +107,7 @@ const codeContent = document.getElementById('code-content');
 // 답안 관련 요소들
 const multipleChoice = document.getElementById('multiple-choice');
 const fillInBlank = document.getElementById('fill-in-blank');
-const shortAnswer = document.getElementById('short-answer');
 const blankInput = document.getElementById('blank-input');
-const answerTextarea = document.getElementById('answer-textarea');
 
 // 퀴즈 액션 버튼들
 const submitBtn = document.getElementById('submit-btn');
@@ -111,6 +145,26 @@ const initializeApp = async () => {
         // Firebase가 로드될 때까지 잠시 대기
         await new Promise(resolve => setTimeout(resolve, 100));
         
+        // Firebase 변수들 직접 가져오기
+        console.log('Firebase 변수들 가져오는 중...');
+        auth = window.auth;
+        db = window.db;
+        createUserWithEmailAndPassword = window.createUserWithEmailAndPassword;
+        signInWithEmailAndPassword = window.signInWithEmailAndPassword;
+        signOut = window.signOut;
+        onAuthStateChanged = window.onAuthStateChanged;
+        collection = window.collection;
+        addDoc = window.addDoc;
+        getDocs = window.getDocs;
+        query = window.query;
+        orderBy = window.orderBy;
+        limit = window.limit;
+        serverTimestamp = window.serverTimestamp;
+        
+        console.log('Firebase 변수들 직접 할당 완료');
+        console.log('auth:', auth);
+        console.log('db:', db);
+        
         // Firebase 설정 검증
         console.log('Firebase 설정 검증 중...');
         if (!validateFirebaseConfig()) {
@@ -137,6 +191,9 @@ const initializeApp = async () => {
         loadQuizData();
         
         console.log('앱 초기화 완료');
+        
+        // 홈 화면으로 시작
+        showView('home-view');
         
     } catch (error) {
         console.error('앱 초기화 실패:', error);
@@ -179,8 +236,15 @@ const hideLoading = () => {
 const showView = (viewId) => {
     console.log(`뷰 전환 시도: ${viewId}`);
     
+    // 현재 뷰 확인
+    const currentView = getCurrentView();
+    if (currentView === viewId) {
+        console.log(`이미 ${viewId} 뷰가 활성화되어 있습니다.`);
+        return;
+    }
+    
     // 모든 뷰 숨김
-    const views = [loginView, registerView, quizView, resultsView, rankingView];
+    const views = [homeView, loginView, registerView, quizView, resultsView, rankingView];
     console.log('현재 뷰들:', views.map(v => v ? v.id : 'null'));
     
     views.forEach(view => {
@@ -215,6 +279,11 @@ const showView = (viewId) => {
 // 뷰 전환 시 추가 처리 함수
 const handleViewTransition = (viewId) => {
     switch (viewId) {
+        case 'home-view':
+            // 홈 뷰로 전환 시 사용자 상태 업데이트
+            updateHomeUserStatus();
+            break;
+            
         case 'login-view':
             // 로그인 뷰로 전환 시 폼 초기화
             resetLoginForm();
@@ -278,9 +347,54 @@ const clearFormErrors = (formType) => {
     }
 };
 
+// 홈 화면 사용자 상태 업데이트
+const updateHomeUserStatus = () => {
+    if (currentUser) {
+        // 로그인된 사용자
+        if (homeUserInfo) homeUserInfo.classList.remove('hidden');
+        if (homeGuestInfo) homeGuestInfo.classList.add('hidden');
+        if (homeLoginBtn) homeLoginBtn.classList.add('hidden'); // 로그인 버튼 숨기기
+        if (homeUserName) {
+            const username = currentUser.email.split('@')[0];
+            homeUserName.textContent = `안녕하세요, ${username}님`;
+            homeUserName.style.color = '#C792EA';
+        }
+    } else {
+        // 게스트 사용자
+        if (homeUserInfo) homeUserInfo.classList.add('hidden');
+        if (homeGuestInfo) homeGuestInfo.classList.remove('hidden');
+        if (homeLoginBtn) homeLoginBtn.classList.remove('hidden'); // 로그인 버튼 보이기
+    }
+};
+
 // 퀴즈 초기화
+// 랜덤 문제 선택 함수
+const selectRandomQuestions = (totalQuestions = 10) => {
+    console.log(`전체 ${QUIZ_QUESTIONS.length}개 문제에서 ${totalQuestions}개 랜덤 선택`);
+    
+    // 전체 문제 배열을 복사
+    const allQuestions = [...QUIZ_QUESTIONS];
+    
+    // Fisher-Yates 셔플 알고리즘으로 랜덤 섞기
+    for (let i = allQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]];
+    }
+    
+    // 상위 10개 선택
+    const selectedQuestions = allQuestions.slice(0, totalQuestions);
+    
+    console.log('선택된 문제들:', selectedQuestions.map(q => q.id));
+    return selectedQuestions;
+};
+
 const initializeQuiz = () => {
     console.log('퀴즈 초기화');
+    
+    // 랜덤 문제 선택 (10개)
+    const selectedQuestions = selectRandomQuestions(10);
+    quizQuestions.length = 0; // 기존 배열 초기화
+    quizQuestions.push(...selectedQuestions); // 선택된 문제들로 교체
     
     // 퀴즈 상태 초기화
     currentQuestionIndex = 0;
@@ -291,6 +405,17 @@ const initializeQuiz = () => {
     // UI 초기화
     updateQuizProgress();
     updateScoreDisplay();
+    
+    // 버튼 상태 초기화
+    if (submitBtn) {
+        submitBtn.textContent = '제출';
+        submitBtn.classList.remove('hidden');
+        submitBtn.disabled = true;
+    }
+    
+    if (nextBtn) {
+        nextBtn.classList.add('hidden');
+    }
     
     // 첫 번째 문제 로드
     if (quizQuestions.length > 0) {
@@ -308,20 +433,20 @@ const displayResults = () => {
     console.log('결과 표시');
     
     // 최종 점수 계산
-    const finalScore = userScore;
-    const totalQuestions = quizQuestions.length;
+    const score = userScore;
+    const totalQuestionsCount = quizQuestions.length;
     const correctAnswers = userAnswers.filter(answer => answer.isCorrect).length;
-    const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    const accuracyPercent = totalQuestionsCount > 0 ? Math.round((correctAnswers / totalQuestionsCount) * 100) : 0;
     
     // UI 업데이트
-    updateResultsUI(finalScore, correctAnswers, totalQuestions, accuracy);
+    updateResultsUI(score, correctAnswers, totalQuestionsCount, accuracyPercent);
     
     // 결과 데이터 저장 (로컬)
     const quizResult = {
-        finalScore,
+        finalScore: score,
         correctAnswers,
-        totalQuestions,
-        accuracy,
+        totalQuestions: totalQuestionsCount,
+        accuracy: accuracyPercent,
         userAnswers,
         quizStartTime,
         quizEndTime: new Date(),
@@ -335,10 +460,10 @@ const displayResults = () => {
 };
 
 // 결과 UI 업데이트
-const updateResultsUI = (finalScore, correctAnswers, totalQuestions, accuracy) => {
+const updateResultsUI = (score, correctAnswers, totalQuestionsCount, accuracyPercent) => {
     // 최종 점수 표시
     if (finalScore) {
-        finalScore.textContent = finalScore;
+        finalScore.textContent = score;
     }
     
     // 정답 수 표시
@@ -348,30 +473,24 @@ const updateResultsUI = (finalScore, correctAnswers, totalQuestions, accuracy) =
     
     // 전체 문제 수 표시
     if (totalQuestions) {
-        totalQuestions.textContent = totalQuestions;
+        totalQuestions.textContent = totalQuestionsCount;
     }
     
     // 정답률 표시
     if (accuracy) {
-        accuracy.textContent = accuracy;
+        accuracy.textContent = accuracyPercent;
     }
 };
 
 // 점수를 Firestore에 저장
 const saveScoreToFirestore = async () => {
-    if (!currentUser) {
-        console.error('사용자가 로그인되지 않았습니다.');
-        showNotification('로그인 후 점수를 저장할 수 있습니다.', 'warning');
-        return;
-    }
-    
     try {
         showLoading();
         
         // 점수 데이터 준비
         const scoreData = {
-            userId: currentUser.uid,
-            userEmail: currentUser.email,
+            userId: currentUser ? currentUser.uid : 'guest',
+            userEmail: currentUser ? currentUser.email : 'guest@example.com',
             score: userScore,
             totalQuestions: quizQuestions.length,
             correctAnswers: userAnswers.filter(answer => answer.isCorrect).length,
@@ -380,13 +499,31 @@ const saveScoreToFirestore = async () => {
             quizEndTime: new Date(),
             duration: quizStartTime ? new Date() - quizStartTime : 0,
             userAnswers: userAnswers,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+            createdAt: new Date(),
+            updatedAt: new Date()
         };
         
         console.log('점수 저장 중:', scoreData);
         
-        // Firestore에 저장
+        // 로컬 모드에서는 localStorage에 저장
+        if (!db) {
+            console.log('로컬 모드: localStorage에 점수 저장');
+            const existingScores = JSON.parse(localStorage.getItem('quiz_scores') || '[]');
+            existingScores.push(scoreData);
+            localStorage.setItem('quiz_scores', JSON.stringify(existingScores));
+            
+            console.log('점수가 localStorage에 성공적으로 저장되었습니다.');
+            showNotification('점수가 저장되었습니다!', 'success');
+            
+            // 저장된 점수 ID를 결과에 추가
+            if (window.currentQuizResult) {
+                window.currentQuizResult.scoreId = `local_${Date.now()}`;
+            }
+            
+            return;
+        }
+        
+        // Firebase 모드
         const docRef = await addDoc(collection(db, 'scores'), scoreData);
         
         console.log('점수가 성공적으로 저장되었습니다. 문서 ID:', docRef.id);
@@ -588,6 +725,32 @@ const setupEventListeners = () => {
         logoutBtn.addEventListener('click', handleLogout);
     }
     
+    // 홈 화면 관련 이벤트
+    if (startQuizBtn) {
+        startQuizBtn.addEventListener('click', () => {
+            console.log('게임 시작 버튼 클릭됨');
+            showView('quiz-view');
+        });
+    }
+    
+    if (viewRankingBtn) {
+        viewRankingBtn.addEventListener('click', () => {
+            console.log('랭킹 보기 버튼 클릭됨');
+            showView('ranking-view');
+        });
+    }
+    
+    if (homeLoginBtn) {
+        homeLoginBtn.addEventListener('click', () => {
+            console.log('홈 로그인 버튼 클릭됨');
+            showView('login-view');
+        });
+    }
+    
+    if (homeLogoutBtn) {
+        homeLogoutBtn.addEventListener('click', handleLogout);
+    }
+    
     // 퀴즈 관련 이벤트
     submitBtn.addEventListener('click', handleSubmitAnswer);
     nextBtn.addEventListener('click', handleNextQuestion);
@@ -599,11 +762,17 @@ const setupEventListeners = () => {
     // 랭킹 관련 이벤트
     refreshRankingBtn.addEventListener('click', refreshRanking);
     backToQuiz.addEventListener('click', () => showView('quiz-view'));
-    backToHome.addEventListener('click', () => showView('login-view'));
+    backToHome.addEventListener('click', () => showView('home-view'));
 };
 
 // ===== 인증 상태 리스너 설정 =====
 const setupAuthStateListener = () => {
+    // 로컬 모드에서는 인증 상태 리스너를 비활성화
+    if (!auth) {
+        console.log('로컬 모드: 인증 상태 리스너 비활성화');
+        return;
+    }
+    
     onAuthStateChanged(auth, (user) => {
         console.log('인증 상태 변경:', user ? '로그인됨' : '로그아웃됨');
         
@@ -631,14 +800,17 @@ const handleUserLogin = (user) => {
         // 헤더 UI 업데이트
         updateHeaderForLoggedInUser();
         
+        // 홈 화면 사용자 상태 업데이트
+        updateHomeUserStatus();
+        
         // 퀴즈 상태 초기화 (새 로그인 시)
         if (!quizStartTime) {
             initializeQuizForNewUser();
         }
         
-        // 적절한 뷰로 전환
+        // 적절한 뷰로 전환 (현재 뷰가 로그인 관련 뷰인 경우에만)
         const currentView = getCurrentView();
-        if (shouldRedirectToQuiz(currentView)) {
+        if (shouldRedirectToQuiz(currentView) && (currentView === 'login-view' || currentView === 'register-view')) {
             showView('quiz-view');
         }
         
@@ -663,6 +835,9 @@ const handleUserLogout = () => {
         
         // 헤더 UI 초기화
         updateHeaderForLoggedOutUser();
+        
+        // 홈 화면 사용자 상태 업데이트
+        updateHomeUserStatus();
         
         // 퀴즈 상태 초기화
         resetQuizState();
@@ -721,6 +896,11 @@ const updateHeaderForLoggedOutUser = () => {
 const initializeQuizForNewUser = () => {
     console.log('새 사용자용 퀴즈 초기화');
     
+    // 랜덤 문제 선택 (10개)
+    const selectedQuestions = selectRandomQuestions(10);
+    quizQuestions.length = 0; // 기존 배열 초기화
+    quizQuestions.push(...selectedQuestions); // 선택된 문제들로 교체
+    
     // 퀴즈 상태 초기화
     currentQuestionIndex = 0;
     userScore = 0;
@@ -776,6 +956,9 @@ const loadCurrentQuestion = () => {
 // 퀴즈 문제 로드 및 렌더링
 const loadQuiz = (question) => {
     try {
+        // 기존 피드백 제거
+        clearAnswerFeedback();
+        
         // 문제 텍스트 표시
         displayQuestionText(question);
         
@@ -792,9 +975,6 @@ const loadQuiz = (question) => {
                 break;
             case 'fill-in-blank':
                 createFillInBlankUI(question);
-                break;
-            case 'short-answer':
-                createShortAnswerUI(question);
                 break;
             default:
                 console.error('알 수 없는 문제 타입:', question.type);
@@ -848,12 +1028,12 @@ const displayCodeBlock = (question) => {
 
 // 답안 컨테이너 초기화
 const clearAnswerContainers = () => {
-    const containers = [multipleChoice, fillInBlank, shortAnswer];
+    const containers = [multipleChoice, fillInBlank];
     containers.forEach(container => {
         if (container) {
             container.classList.add('hidden');
             // 기존 내용 제거
-            const content = container.querySelector('.options-list, .blank-container, .textarea-container');
+            const content = container.querySelector('.options-list, .blank-container');
             if (content) {
                 content.innerHTML = '';
             }
@@ -902,47 +1082,42 @@ const createMultipleChoiceUI = (question) => {
 
 // 빈칸 채우기 UI 생성
 const createFillInBlankUI = (question) => {
-    if (!fillInBlank || !blankInput) return;
+    if (!fillInBlank) return;
     
     const blankContainer = fillInBlank.querySelector('.blank-container');
     if (!blankContainer) return;
     
-    // 입력 필드 초기화
-    blankInput.value = '';
-    blankInput.placeholder = '답을 입력하세요';
+    // 입력 필드가 없으면 생성
+    let inputField = blankContainer.querySelector('.blank-input');
+    if (!inputField) {
+        inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.className = 'blank-input';
+        inputField.placeholder = '답을 입력하세요';
+        blankContainer.appendChild(inputField);
+    }
     
-    // 입력 이벤트
-    blankInput.addEventListener('input', () => {
+    // 입력 필드 초기화
+    inputField.value = '';
+    inputField.placeholder = '답을 입력하세요';
+    
+    // 기존 이벤트 리스너 제거
+    inputField.removeEventListener('input', updateSubmitButton);
+    inputField.removeEventListener('keypress', handleSubmitAnswer);
+    
+    // 새로운 이벤트 리스너 추가
+    inputField.addEventListener('input', () => {
         updateSubmitButton();
     });
     
-    // Enter 키 이벤트
-    blankInput.addEventListener('keypress', (e) => {
+    inputField.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             handleSubmitAnswer();
         }
     });
     
     fillInBlank.classList.remove('hidden');
-};
-
-// 서술형 UI 생성
-const createShortAnswerUI = (question) => {
-    if (!shortAnswer || !answerTextarea) return;
-    
-    const textareaContainer = shortAnswer.querySelector('.textarea-container');
-    if (!textareaContainer) return;
-    
-    // 텍스트 영역 초기화
-    answerTextarea.value = '';
-    answerTextarea.placeholder = '답을 입력하세요';
-    
-    // 입력 이벤트
-    answerTextarea.addEventListener('input', () => {
-        updateSubmitButton();
-    });
-    
-    shortAnswer.classList.remove('hidden');
+    console.log('빈칸 채우기 UI 생성 완료');
 };
 
 // 퀴즈 UI 상태 업데이트
@@ -978,11 +1153,8 @@ const updateSubmitButton = () => {
             break;
             
         case 'fill-in-blank':
-            hasAnswer = blankInput.value.trim().length > 0;
-            break;
-            
-        case 'short-answer':
-            hasAnswer = answerTextarea.value.trim().length > 0;
+            const blankInputField = document.querySelector('.blank-input');
+            hasAnswer = blankInputField ? blankInputField.value.trim().length > 0 : false;
             break;
     }
     
@@ -1000,10 +1172,8 @@ const getUserAnswer = () => {
             return selectedOption ? parseInt(selectedOption.value) : null;
             
         case 'fill-in-blank':
-            return blankInput ? blankInput.value.trim() : null;
-            
-        case 'short-answer':
-            return answerTextarea ? answerTextarea.value.trim() : null;
+            const blankInputField = document.querySelector('.blank-input');
+            return blankInputField ? blankInputField.value.trim() : null;
             
         default:
             return null;
@@ -1104,10 +1274,16 @@ const QUIZ_QUESTIONS = [
     {
         id: 3,
         category: '코딩',
-        type: 'short-answer',
-        question: '다음 코드에서 발생할 수 있는 문제점을 설명하고 해결 방법을 제시해주세요.\n\n```javascript\nfunction divide(a, b) {\n    return a / b;\n}\n\nconsole.log(divide(10, 0));\n```',
-        modelAnswer: '문제점: 0으로 나누기로 인한 Infinity 반환\n해결방법: 0 체크 후 예외 처리 또는 기본값 반환\n\n예시:\n```javascript\nfunction divide(a, b) {\n    if (b === 0) {\n        throw new Error("0으로 나눌 수 없습니다");\n    }\n    return a / b;\n}\n```',
-        explanation: '0으로 나누기는 수학적으로 정의되지 않으므로 적절한 예외 처리가 필요합니다.'
+        type: 'multiple-choice',
+        question: '다음 코드에서 발생할 수 있는 문제점은?\n\n```javascript\nfunction divide(a, b) {\n    return a / b;\n}\n\nconsole.log(divide(10, 0));\n```',
+        options: [
+            '0으로 나누기로 인한 Infinity 반환',
+            '메모리 부족 오류',
+            '타입 에러 발생',
+            '무한 루프 발생'
+        ],
+        correctAnswer: 0,
+        explanation: 'JavaScript에서 0으로 나누면 Infinity를 반환합니다. 적절한 예외 처리가 필요합니다.'
     },
     {
         id: 4,
@@ -1158,10 +1334,16 @@ const QUIZ_QUESTIONS = [
     {
         id: 8,
         category: '컴퓨터 구조',
-        type: 'short-answer',
-        question: '캐시 메모리의 역할과 L1, L2, L3 캐시의 차이점을 설명해주세요.',
-        modelAnswer: '캐시 메모리는 CPU와 메인 메모리 사이의 속도 차이를 완화하는 고속 버퍼입니다.\n\n- L1 캐시: CPU 코어 내부, 가장 빠르고 작음 (32KB-64KB)\n- L2 캐시: CPU 코어 근처, 중간 속도와 크기 (256KB-1MB)\n- L3 캐시: 여러 코어가 공유, 상대적으로 느리지만 큼 (8MB-32MB)\n\n계층적 구조로 자주 사용되는 데이터를 빠른 저장소에 보관하여 전체 성능을 향상시킵니다.',
-        explanation: '캐시는 메모리 계층 구조의 핵심으로, 데이터 지역성 원리를 활용합니다.'
+        type: 'multiple-choice',
+        question: '캐시 메모리에 대한 설명으로 올바른 것은?',
+        options: [
+            'L1 캐시는 L2 캐시보다 크고 느리다',
+            'L3 캐시는 여러 CPU 코어가 공유하는 캐시다',
+            '캐시는 메인 메모리보다 느리다',
+            'L2 캐시는 CPU 코어 내부에 위치한다'
+        ],
+        correctAnswer: 1,
+        explanation: 'L3 캐시는 여러 CPU 코어가 공유하는 캐시로, 상대적으로 크지만 느립니다. L1 > L2 > L3 순으로 빠르고 작습니다.'
     },
     {
         id: 9,
@@ -1202,10 +1384,170 @@ const QUIZ_QUESTIONS = [
     {
         id: 12,
         category: '컴퓨터 구조',
-        type: 'short-answer',
-        question: '파이프라인(Pipeline) 처리의 장점과 단점을 설명해주세요.',
-        modelAnswer: '장점:\n- 명령어 처리량(Throughput) 증가\n- CPU 활용률 향상\n- 전체적인 성능 향상\n\n단점:\n- 파이프라인 해저드 발생 가능\n- 복잡한 제어 회로 필요\n- 분기 예측 실패 시 성능 저하\n- 하드웨어 복잡도 증가',
-        explanation: '파이프라인은 명령어를 여러 단계로 나누어 병렬 처리하는 기법입니다.'
+        type: 'multiple-choice',
+        question: '파이프라인(Pipeline) 처리의 주요 장점은?',
+        options: [
+            '메모리 사용량 감소',
+            '명령어 처리량(Throughput) 증가',
+            '전력 소비 감소',
+            '하드웨어 복잡도 감소'
+        ],
+        correctAnswer: 1,
+        explanation: '파이프라인은 명령어를 여러 단계로 나누어 병렬 처리하여 전체적인 처리량을 증가시킵니다.'
+    },
+    
+    // 추가 문제들
+    {
+        id: 13,
+        category: '코딩',
+        type: 'multiple-choice',
+        question: '다음 중 JavaScript의 원시 타입이 아닌 것은?',
+        options: [
+            'string',
+            'number',
+            'object',
+            'boolean'
+        ],
+        correctAnswer: 2,
+        explanation: 'object는 참조 타입입니다. JavaScript의 원시 타입은 string, number, boolean, undefined, null, symbol이 있습니다.'
+    },
+    {
+        id: 14,
+        category: '코딩',
+        type: 'fill-in-blank',
+        question: '다음 코드의 출력 결과를 예측해보세요.\n\n```javascript\nlet x = 10;\nlet y = x++;\nconsole.log(x, y);\n```\n\n출력 결과: ____ ____',
+        correctAnswer: '11 10',
+        explanation: '후위 증가 연산자(++)는 값을 반환한 후 증가시킵니다. 따라서 y는 10이고, x는 11이 됩니다.'
+    },
+    {
+        id: 15,
+        category: '컴퓨터 구조',
+        type: 'multiple-choice',
+        question: '다음 중 메모리 관리 기법이 아닌 것은?',
+        options: [
+            '페이징(Paging)',
+            '세그멘테이션(Segmentation)',
+            '캐싱(Caching)',
+            '가상 메모리(Virtual Memory)'
+        ],
+        correctAnswer: 2,
+        explanation: '캐싱은 메모리 관리 기법이 아니라 성능 향상을 위한 기법입니다. 페이징, 세그멘테이션, 가상 메모리가 메모리 관리 기법입니다.'
+    },
+    {
+        id: 16,
+        category: '코딩',
+        type: 'fill-in-blank',
+        question: '다음은 배열의 최댓값을 찾는 함수입니다. 빈칸을 채워주세요.\n\n```javascript\nfunction findMax(arr) {\n    let max = arr[0];\n    for (let i = 1; i < arr.length; i++) {\n        if (arr[i] > max) {\n            max = ____;\n        }\n    }\n    return max;\n}\n```',
+        correctAnswer: 'arr[i]',
+        explanation: '현재 요소가 기존 최댓값보다 크면 최댓값을 현재 요소로 업데이트해야 합니다.'
+    },
+    {
+        id: 17,
+        category: '컴퓨터 구조',
+        type: 'multiple-choice',
+        question: '다음 중 운영체제의 주요 기능이 아닌 것은?',
+        options: [
+            '프로세스 관리',
+            '메모리 관리',
+            '파일 시스템 관리',
+            '하드웨어 제조'
+        ],
+        correctAnswer: 3,
+        explanation: '하드웨어 제조는 운영체제의 기능이 아닙니다. 운영체제는 프로세스 관리, 메모리 관리, 파일 시스템 관리 등의 기능을 담당합니다.'
+    },
+    {
+        id: 18,
+        category: '코딩',
+        type: 'multiple-choice',
+        question: '다음 JavaScript 코드의 실행 결과는?\n\n```javascript\nconsole.log(typeof null);\n```',
+        options: [
+            'null',
+            'undefined',
+            'object',
+            'string'
+        ],
+        correctAnswer: 2,
+        explanation: 'JavaScript에서 typeof null은 "object"를 반환합니다. 이는 JavaScript의 알려진 버그입니다.'
+    },
+    {
+        id: 19,
+        category: '컴퓨터 구조',
+        type: 'fill-in-blank',
+        question: 'CPU의 명령어 실행 주기에서 명령어를 해석하는 단계를 ____라고 합니다.',
+        correctAnswer: 'Decode',
+        explanation: '명령어 실행 주기는 Fetch(인출) → Decode(해독) → Execute(실행) → Write Back(쓰기) 순서로 진행됩니다.'
+    },
+    {
+        id: 20,
+        category: '코딩',
+        type: 'multiple-choice',
+        question: '다음 중 비동기 프로그래밍과 관련이 없는 것은?',
+        options: [
+            'Promise',
+            'async/await',
+            'Callback',
+            'for loop'
+        ],
+        correctAnswer: 3,
+        explanation: 'for loop는 동기적 반복문입니다. Promise, async/await, Callback은 모두 비동기 프로그래밍과 관련이 있습니다.'
+    },
+    {
+        id: 21,
+        category: '컴퓨터 구조',
+        type: 'multiple-choice',
+        question: '다음 중 인터럽트(Interrupt)의 종류가 아닌 것은?',
+        options: [
+            '하드웨어 인터럽트',
+            '소프트웨어 인터럽트',
+            '타이머 인터럽트',
+            '네트워크 인터럽트'
+        ],
+        correctAnswer: 3,
+        explanation: '네트워크 인터럽트는 별도의 인터럽트 종류가 아닙니다. 하드웨어 인터럽트, 소프트웨어 인터럽트, 타이머 인터럽트가 주요 인터럽트 종류입니다.'
+    },
+    {
+        id: 22,
+        category: '코딩',
+        type: 'fill-in-blank',
+        question: '다음은 재귀 함수로 팩토리얼을 계산하는 코드입니다. 빈칸을 채워주세요.\n\n```javascript\nfunction factorial(n) {\n    if (n <= 1) {\n        return 1;\n    }\n    return n * factorial(____);\n}\n```',
+        correctAnswer: 'n - 1',
+        explanation: '팩토리얼은 n! = n × (n-1)! 이므로, 재귀 호출 시 n-1을 전달해야 합니다.'
+    },
+    {
+        id: 23,
+        category: '컴퓨터 구조',
+        type: 'multiple-choice',
+        question: '다음 중 캐시 미스(Cache Miss)의 종류가 아닌 것은?',
+        options: [
+            'Compulsory Miss',
+            'Capacity Miss',
+            'Conflict Miss',
+            'Memory Miss'
+        ],
+        correctAnswer: 3,
+        explanation: 'Memory Miss는 캐시 미스의 종류가 아닙니다. 캐시 미스의 주요 종류는 Compulsory Miss, Capacity Miss, Conflict Miss입니다.'
+    },
+    {
+        id: 24,
+        category: '코딩',
+        type: 'multiple-choice',
+        question: '다음 JavaScript 코드의 실행 결과는?\n\n```javascript\nlet arr = [1, 2, 3];\narr[10] = 10;\nconsole.log(arr.length);\n```',
+        options: [
+            '3',
+            '4',
+            '10',
+            '11'
+        ],
+        correctAnswer: 3,
+        explanation: 'JavaScript 배열에서 인덱스 10에 값을 할당하면 배열의 길이가 11이 됩니다. 중간의 빈 슬롯들은 undefined로 채워집니다.'
+    },
+    {
+        id: 25,
+        category: '컴퓨터 구조',
+        type: 'fill-in-blank',
+        question: '다음은 이진 트리의 전위 순회 코드입니다. 빈칸을 채워주세요.\n\n```javascript\nfunction preorderTraversal(node) {\n    if (node === null) return;\n    \n    console.log(node.value);\n    preorderTraversal(node.left);\n    preorderTraversal(____);\n}\n```',
+        correctAnswer: 'node.right',
+        explanation: '전위 순회는 루트 → 왼쪽 서브트리 → 오른쪽 서브트리 순서로 방문하므로 오른쪽 자식 노드를 재귀 호출해야 합니다.'
     }
 ];
 
@@ -1262,8 +1604,20 @@ const handleLogin = async (e) => {
         console.log('로그인 성공:', user.email);
         showNotification('로그인에 성공했습니다!', 'success');
         
+        // 사용자 상태 업데이트
+        currentUser = user;
+        
+        // 사용자 정보 UI 업데이트
+        updateUserInfo(user);
+        
+        // 헤더 UI 업데이트
+        updateHeaderForLoggedInUser();
+        
         // 폼 초기화
         loginForm.reset();
+        
+        // 홈 화면으로 전환
+        showView('home-view');
         
     } catch (error) {
         console.error('로그인 실패:', error);
@@ -1311,11 +1665,20 @@ const handleRegister = async (e) => {
         console.log('회원가입 성공:', user.email);
         showNotification('회원가입에 성공했습니다!', 'success');
         
+        // 사용자 상태 업데이트
+        currentUser = user;
+        
+        // 사용자 정보 UI 업데이트
+        updateUserInfo(user);
+        
+        // 헤더 UI 업데이트
+        updateHeaderForLoggedInUser();
+        
         // 폼 초기화
         registerForm.reset();
         
-        // 로그인 뷰로 전환
-        showView('login-view');
+        // 홈 화면으로 전환
+        showView('home-view');
         
     } catch (error) {
         console.error('회원가입 실패:', error);
@@ -1334,10 +1697,26 @@ const handleLogout = async () => {
         await signOut(auth);
         
         console.log('로그아웃 성공');
-        showNotification('로그아웃되었습니다.', 'info');
+        
+        // 사용자 상태 초기화
+        currentUser = null;
+        
+        // 사용자 정보 UI 초기화
+        clearUserInfo();
+        
+        // 헤더 UI 초기화
+        updateHeaderForLoggedOutUser();
+        
+        // 홈 화면 사용자 상태 업데이트
+        updateHomeUserStatus();
         
         // 퀴즈 상태 초기화
         resetQuizState();
+        
+        // 홈 화면으로 전환
+        showView('home-view');
+        
+        showNotification('로그아웃되었습니다.', 'info');
         
     } catch (error) {
         console.error('로그아웃 실패:', error);
@@ -1448,7 +1827,7 @@ const resetQuizState = () => {
     if (currentScore) currentScore.textContent = '0';
     
     // 답안 컨테이너 숨김
-    const answerContainers = [multipleChoice, fillInBlank, shortAnswer];
+    const answerContainers = [multipleChoice, fillInBlank];
     answerContainers.forEach(container => {
         if (container) container.classList.add('hidden');
     });
@@ -1554,11 +1933,6 @@ const handleSubmitAnswer = () => {
     
     // 버튼 상태 변경 (제출 → 다음)
     updateSubmitButtonToNext();
-    
-    // 서술형인 경우 모범 답안 표시
-    if (question.type === 'short-answer' && question.modelAnswer) {
-        showModelAnswer(question);
-    }
 };
 
 // 다음 문제 처리
@@ -1675,39 +2049,6 @@ const highlightSelectedOption = (selectedIndex, isCorrect) => {
     }
 };
 
-// 모범 답안 표시 (서술형)
-const showModelAnswer = (question) => {
-    if (!question.modelAnswer) return;
-    
-    const modelAnswerContainer = document.createElement('div');
-    modelAnswerContainer.className = 'model-answer';
-    modelAnswerContainer.style.marginTop = '1rem';
-    modelAnswerContainer.style.padding = '1rem';
-    modelAnswerContainer.style.backgroundColor = '#d1ecf1';
-    modelAnswerContainer.style.border = '2px solid #bee5eb';
-    modelAnswerContainer.style.borderRadius = '8px';
-    modelAnswerContainer.style.color = '#0c5460';
-    
-    const modelAnswerTitle = document.createElement('div');
-    modelAnswerTitle.innerHTML = '<strong>📝 모범 답안:</strong>';
-    modelAnswerTitle.style.marginBottom = '0.5rem';
-    modelAnswerContainer.appendChild(modelAnswerTitle);
-    
-    const modelAnswerContent = document.createElement('div');
-    modelAnswerContent.style.whiteSpace = 'pre-line';
-    modelAnswerContent.style.fontFamily = 'monospace';
-    modelAnswerContent.style.fontSize = '0.9em';
-    modelAnswerContent.style.lineHeight = '1.4';
-    modelAnswerContent.textContent = question.modelAnswer;
-    modelAnswerContainer.appendChild(modelAnswerContent);
-    
-    // 문제 텍스트 다음에 모범 답안 삽입
-    const questionElement = questionText;
-    if (questionElement) {
-        questionElement.parentNode.insertBefore(modelAnswerContainer, questionElement.nextSibling);
-    }
-};
-
 // 답안 피드백 제거
 const clearAnswerFeedback = () => {
     const existingFeedback = document.querySelector('.answer-feedback');
@@ -1730,13 +2071,12 @@ const clearAnswerFeedback = () => {
 // 제출 버튼을 다음 버튼으로 변경
 const updateSubmitButtonToNext = () => {
     if (submitBtn) {
-        submitBtn.textContent = '다음 문제';
-        submitBtn.classList.remove('hidden');
-        submitBtn.disabled = false;
+        submitBtn.classList.add('hidden');
     }
     
     if (nextBtn) {
-        nextBtn.classList.add('hidden');
+        nextBtn.classList.remove('hidden');
+        nextBtn.disabled = false;
     }
 };
 
@@ -1753,10 +2093,6 @@ const checkAnswer = (question, userAnswer) => {
             const correctAnswer = question.correctAnswer.trim().toLowerCase();
             const userAnswerProcessed = userAnswer.trim().toLowerCase();
             return correctAnswer === userAnswerProcessed;
-            
-        case 'short-answer':
-            // 서술형은 자가 채점이므로 항상 true
-            return true;
             
         default:
             return false;
@@ -1836,6 +2172,35 @@ const loadRanking = async () => {
 // 상위 랭킹 조회
 const getTopRankings = async (limit = 10) => {
     try {
+        // 로컬 모드에서는 localStorage에서 랭킹 데이터 가져오기
+        if (!db) {
+            console.log('로컬 모드: localStorage에서 랭킹 데이터 조회');
+            const localScores = JSON.parse(localStorage.getItem('quiz_scores') || '[]');
+            
+            // 점수순으로 정렬하고 상위 N개 반환
+            const sortedScores = localScores
+                .sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                })
+                .slice(0, limit);
+            
+            return sortedScores.map((score, index) => ({
+                id: `local_${index}`,
+                rank: index + 1,
+                userId: score.userId || 'guest',
+                userEmail: score.userEmail || 'guest@example.com',
+                score: score.score,
+                totalQuestions: score.totalQuestions,
+                correctAnswers: score.correctAnswers,
+                accuracy: score.accuracy,
+                duration: score.duration,
+                createdAt: score.createdAt,
+                quizEndTime: score.quizEndTime
+            }));
+        }
+        
+        // Firebase 모드
         const rankingsQuery = query(
             collection(db, 'scores'),
             orderBy('score', 'desc'),
@@ -2059,4 +2424,24 @@ const getUserRanking = async (userId) => {
 };
 
 // ===== 앱 시작 =====
-document.addEventListener('DOMContentLoaded', initializeApp);
+// 즉시 앱 초기화 시도
+console.log('스크립트 로드 완료');
+
+// Firebase 초기화 완료를 기다린 후 앱 초기화
+const checkFirebaseAndInit = () => {
+    console.log('Firebase 함수 확인 중...');
+    console.log('window.createUserWithEmailAndPassword:', window.createUserWithEmailAndPassword);
+    console.log('window.signInWithEmailAndPassword:', window.signInWithEmailAndPassword);
+    
+    // Firebase 함수들이 존재하는지 확인 (로컬 모드 포함)
+    if (window.createUserWithEmailAndPassword && window.signInWithEmailAndPassword) {
+        console.log('Firebase 함수들이 준비됨 - 앱 초기화 시작');
+        initializeApp();
+    } else {
+        console.log('Firebase 함수들 대기 중... 100ms 후 재시도');
+        setTimeout(checkFirebaseAndInit, 100);
+    }
+};
+
+// 즉시 확인
+checkFirebaseAndInit();

@@ -1,11 +1,11 @@
-#개발일지
-    10월26~10월28일
+# 개발일지
+    10월26일 AM 08:00 ~ PM 11:51 
 
-##프로젝트 개요
+## 프로젝트 개요
     프로젝트명 : 코딩/컴퓨터구조에 대한 퀴즈 배틀 앱
-    개발 기간 : 10월26 ~
+    개발 기간 : 10월26일 AM 08:00 ~ PM 11:51
 
-###개발과정
+### 개발과정
 
 #### DAY 1
 -요구사항 확인
@@ -79,7 +79,7 @@
 <details>
 <summary>**웹제미나이2 : 프롬프트 제작 Gems 설정 완료 후 이용**</summary>
 
-<detials>
+<details>
 <summary>[초기지침설정]</summary>
 
 1. 정체성 (Identity & Role)
@@ -224,7 +224,7 @@ Firebase Authentication
 
 코드 블록 (핵심):
 
-퀴즈의 주제가 '코딩'이므로, <pre>와 <code> 태그를 이용해 코드 스니펫(Code Snippet)이 문제로 나올 경우를 대비합니다.
+퀴즈의 주제가 '코딩'이므로, pre와 code 태그를 이용해 코드 스니펫(Code Snippet)이 문제로 나올 경우를 대비합니다.
 
 CSS로 가독성 높은 배경과 고정폭 글꼴을 적용합니다.
 
@@ -246,11 +246,11 @@ R (Read): 로그인 상태 감지. onAuthStateChanged로 사용자의 로그인 
 
 동적 UI 렌더링 (loadQuiz()):
 
-type: "multiple-choice" -> <input type="radio"> 동적 생성.
+type: "multiple-choice" -> input type="radio" 동적 생성.
 
-type: "fill-in-the-blank" -> <input type="text"> 동적 생성.
+type: "fill-in-the-blank" -> input type="text" 동적 생성.
 
-type: "short-answer" -> <textarea> 동적 생성.
+type: "short-answer" -> textarea 동적 생성.
 
 상태 관리: let currentQuestionIndex, let userScore 변수가 현재 진행 상황을 추적합니다.
 
@@ -524,13 +524,26 @@ GitHub 저장소 URL 제출
 
  AI 사용 표시 커밋 5개 이상
  </details>
+
+<details>
+<summary> 커밋 메세지 질문1 </summary>
+
+오류가 떠서
+
+src/script.js 에서 91번 줄에 refreshRanking 이부분, 같은 파일의 101줄에 quizQuestions 이 부분, 같은 파일의 456줄의 loadRanking 이 부분, 1023줄의 quizQuestions 이 부분, 1745줄의 loadRanking 이부분, 1971줄의 refreshRanking 이 부분들이 오류 났는데 고쳐줘.
+
+이렇게 요청을 해서 오류를 고쳤어. 이때 커밋 메세지는 뭘로 해야 할까?
+
+</details>
+
  </details>
 
 <details>
 <summary>cursor를 이용한 제작 프롬프트 내용</summary>
 
 <details>
-<summary> cursor에게 질문 </summary>
+<summary> cursor에게 요청1 </summary>
+
 너의 정체성(Identity): 너는 'Vanilla JS와 Firebase 전문 페어 프로그래머'다. 너의 임무는 나의 대학교 2학년 중간고사 과제인 'IT 기술 퀴즈 웹 앱' 제작을 돕는 것이다.
 
 프로젝트 목표(Goal): Firebase(Auth, Firestore)와 Vanilla JavaScript를 사용해, 회원가입/로그인, 퀴즈 풀이, 실시간 랭킹 기능을 갖춘 반응형 SPA(Single Page Application)를 구축한다.
@@ -562,3 +575,237 @@ Backend/DB: Firebase (Authentication, Cloud Firestore)
 Style: SPA ( .hidden 클래스로 뷰 전환)
 
 첫 번째 작업(Your First Task): 먼저, 프로젝트의 기본 구조를 설정한다. [시험 내용]에 명시된 요구사항에 맞춰, 다음 3개의 필수 문서 파일(README.md, GEMINI.MD, DEVELOPMENT_LOG.MD)의 기본 템플릿 초안을 생성해 줘.
+</details>
+
+<details>
+<summary> cursor에게 요청2 </summary>
+
+좋아. 이제 src/index.html 파일의 전체 구조를 만들어줘. [웹 애플리케이션 내용]에 나온 대로 시맨틱 태그를 사용하고, #login-view, #quiz-view, #ranking-view 섹션을 포함해 줘.
+
+</details>
+
+<details>
+<summary> cursor에게 요청3 </summary>
+
+이제 src/style.css 파일을 만들자. [웹 애플리케이션 내용]의 요구사항(Flex/Grid 중앙 정렬, 반응형 미디어 쿼리, .hidden, .correct, .incorrect, pre/code 스타일)을 모두 포함해 줘.
+
+</details>
+
+<details>
+<summary> cursor에게 요청4 </summary>
+
+다음은 firebase-config.js 파일이야. Firebase API 키를 넣을 수 있는 템플릿을 만들고, auth와 db(Firestore)를 export 해줘.
+</details>
+
+<details>
+<summary> cursor에게 요청5 </summary>
+
+가장 중요한 src/script.js 파일을 만들자. 먼저, 필요한 모든 모듈(firebase-config)을 import하고, 모든 뷰(section)와 핵심 버튼들의 DOM 요소를 변수로 선언하는 '초기 설정' 부분만 작성해 줘.
+
+</details>
+
+<details>
+<summary> cursor에게 요청6 </summary>
+
+이어서 script.js에 '뷰 전환 로직'을 추가하자. .hidden 클래스를 제어하여 뷰를 바꾸는 showView(viewId) 함수를 만들어 줘.
+
+</details>
+
+<details>
+<summary> cursor에게 요청7 </summary>
+
+이제 '사용자 인증(Auth)' 기능을 만들자. script.js에 회원가입, 로그인, 로그아웃 기능을 처리하는 이벤트 리스너와 함수를 추가해 줘. 비밀번호는 6자리 이상이어야 해.
+
+</details>
+
+<details>
+<summary> cursor에게 요청8 </summary>
+
+다음은 '로그인 상태 감지' 기능이야. onAuthStateChanged를 사용해서, 사용자가 로그인하면 퀴즈 뷰로, 로그아웃하면 로그인 뷰로 자동 전환되는 로직을 script.js에 추가해 줘.
+
+</details>
+
+<details>
+<summary> cursor에게 요청9 </summary>
+
+이제 '퀴즈 엔진'의 데이터를 만들자. script.js 상단에 [웹 애플리케이션 내용]에 명시된 '코딩'과 '컴퓨터 구조' 주제의 질문(최소 5개)을 const questions = [...] 배열로 하드코딩해 줘. 객관식, 빈칸 채우기, 서술형 타입을 모두 포함해 줘.
+
+</details>
+
+<details>
+<summary> cursor에게 요청10 </summary>
+
+퀴즈 엔진의 핵심인 loadQuiz() 함수를 만들자. currentQuestionIndex를 기반으로 질문을 가져와서, 질문 타입(multiple-choice, fill-in-the-blank 등)에 맞춰 동적으로 HTML을 생성하는 기능을 script.js에 추가해 줘.
+
+</details>
+
+<details>
+<summary> cursor에게 요청11 </summary>
+
+이제 '퀴즈 제출 및 채점' 로직을 만들자. #submit-btn의 2상태(제출/다음)를 관리하고, 빈칸 채우기(trim().toLowerCase()) 및 객관식 답을 채점하는 로직을 script.js에 추가해 줘. 서술형은 모범 답안만 보여줘
+
+</details>
+
+<details>
+<summary> cursor에게 요청12 </summary>
+
+퀴즈가 끝나면 '결과 저장' 기능을 추가하자. showResults() 함수에서 계산된 최종 점수를 saveScoreToFirestore() 함수를 호출하여 Cloud Firestore의 scores 컬렉션에 사용자 ID와 함께 저장하는 로직을 script.js에 추가해 줘.
+
+</details>
+<details>
+<summary> cursor에게 요청13 </summary>
+
+마지막으로 '랭킹 보드' 기능을 만들자. loadRanking() 함수를 script.js에 추가해 줘. 이 함수는 Firestore의 scores 컬렉션을 score 기준으로 내림차순 정렬해서 상위 10개의 랭킹을 동적으로 렌더링해야 해.
+
+</details>
+
+<details>
+<summary> cursor에게 코드 오류 수정 요청 1 </summary>
+
+src/script.js 에서 91번 줄에 refreshRanking 이부분, 같은 파일의 101줄에 quizQuestions 이 부분, 같은 파일의 456줄의 loadRanking 이 부분, 1023줄의 quizQuestions 이 부분, 1745줄의 loadRanking 이부분, 1971줄의 refreshRanking 이 부분들이 오류 났는데 고쳐줘.
+
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 로그인/회원가입 오류 수정 요청 1 </summary>
+
+사이트 들어가서 회원가입부터 하려고 했는데 회원가입 버튼을 눌러도 변하는 게 없고 아이디와 비밀번호를 입력하고 회웝가입을 눌러도 회원가입이 안 돼. 로그인을 누른다고 해도 로그인이 안 돼.
+
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 로그인/회원가입 오류 수정 요청 2 </summary>
+
+아이디와 비밀번호 입력 후 회원가입 버튼은 눌러도 콘솔창에서나, 화면에서나 아무런 변화가 없고, 로그인 버튼을 누르면
+src/?email=asjjdh%40…sword=asdfasfsaff:1 Uncaught TypeError: Failed to resolve module specifier "firebase/app". Relative references must start with either "/", "./", or "../".Understand this error
+src/?email=asjjdh%40…sword=asdfasfsaff:1 Uncaught TypeError: Failed to resolve module specifier "firebase/firestore". Relative references must start with either "/", "./", or "../".
+이런 오류가 떠.
+
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 로그인/회원가입 오류 수정 요청 3 </summary>
+
+아이디와 비밀번호 입력 후 회원가입 버튼은 눌러도 아무런 변화가 없어(오류 메세지 조차 안 뜸,, 클릭이 된다는 표시는 뜨는데 그 후 아무런 조취가 취해지지 않음). 그리고 로그인 버튼을 누르면 Access to script at 'file:///C:/Users/ajhoo/OneDrive/Desktop/quiz_app/src/script.js' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app.Understand this error
+script.js:1  Failed to load resource: net::ERR_FAILED
+이러한 오류가 떠.
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 로그인/회원가입 오류 수정 요청 4 </summary>
+
+script.js:1321 회원가입 실패: FirebaseError: Firebase: Error (auth/configuration-not-found).
+    at createErrorInternal (assert.ts:161:7)
+    at _fail (assert.ts:79:17)
+    at _performFetchWithErrorHandling (index.ts:214:22)
+    at async _performSignInRequest (index.ts:238:7)
+    at async createUserWithEmailAndPassword (email_and_password.ts:285:22)
+    at async HTMLFormElement.handleRegister (script.js:1308:32) 회원가입하려고 하니까 이런 오류가 떠.
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 로그인/회원가입 오류 수정 요청 5 </summary>
+
+identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyD_y2djj8OZIp98S7VSoZm8-6c0pI819Po:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+script.js:1321 회원가입 실패: FirebaseError: Firebase: Error (auth/configuration-not-found).
+    at createErrorInternal (assert.ts:161:7)
+    at _fail (assert.ts:79:17)
+    at _performFetchWithErrorHandling (index.ts:214:22)
+    at async _performSignInRequest (index.ts:238:7)
+    at async createUserWithEmailAndPassword (email_and_password.ts:285:22)
+    at async HTMLFormElement.handleRegister (script.js:1308:32)
+회원가입 하려고 하니까 이런 오류 떠
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 파이어베이스 연결 오류 수정 요청 1 </summary>
+
+파이어베이스 프로젝트 설정에서
+이미 npm 및 모듈 번들러(예: webpack 또는 Rollup)를 사용 중인 경우 다음 명령어를 실행하면 최신 SDK를 설치할 수 있습니다(자세히 알아보기).
+
+npm install firebase
+그런 다음 Firebase를 초기화하여 사용하려는 제품의 SDK를 사용하세요.
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD_y2djj8OZIp98S7VSoZm8-6c0pI819Po",
+  authDomain: "quiz-app-e4a22.firebaseapp.com",
+  projectId: "quiz-app-e4a22",
+  storageBucket: "quiz-app-e4a22.firebasestorage.app",
+  messagingSenderId: "325550263667",
+  appId: "1:325550263667:web:41769ba5105bda8d4d0906",
+  measurementId: "G-L6T84FBYJN"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+이렇게 하라는데 뭐야? 이렇게 안 해서 그런 건지
+웹에 들어가면
+앱 초기화 시작
+(index):233 Firebase 초기화 성공
+script.js:115 Firebase 설정 검증 중...
+script.js:23 Firebase가 제대로 초기화되지 않았습니다.
+validateFirebaseConfig @ script.js:23
+initializeApp @ script.js:116Understand this error
+script.js:117 Firebase 설정 검증 실패
+이렇게 떠
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 로그인/회원가입 오류 수정 요청 6 </summary>
+
+앱 초기화 시작
+(index):233 Firebase 초기화 성공
+(index):234 초기화된 auth: AuthImpl {app: FirebaseAppImpl, heartbeatServiceProvider: Provider, appCheckServiceProvider: Provider, config: {…}, currentUser: null, …}
+(index):235 초기화된 db: Firestore {_authCredentials: __PRIVATE_FirebaseAuthCredentialsProvider, _appCheckCredentials: __PRIVATE_FirebaseAppCheckTokenProvider, _databaseId: DatabaseId, _app: FirebaseAppImpl, type: 'firestore', …}
+(index):258 전역 변수 설정 시작
+(index):273 전역 변수 설정 완료
+(index):274 window.auth: AuthImpl {app: FirebaseAppImpl, heartbeatServiceProvider: Provider, appCheckServiceProvider: Provider, config: {…}, currentUser: null, …}
+(index):275 window.db: Firestore {_authCredentials: __PRIVATE_FirebaseAuthCredentialsProvider, _appCheckCredentials: __PRIVATE_FirebaseAppCheckTokenProvider, _databaseId: DatabaseId, _app: FirebaseAppImpl, type: 'firestore', …}
+script.js:115 Firebase 설정 검증 중...
+script.js:23 Firebase가 제대로 초기화되지 않았습니다.
+validateFirebaseConfig @ script.js:23
+initializeApp @ script.js:116Understand this error
+script.js:117 Firebase 설정 검증 실패
+initializeApp @ script.js:117Understand this error
+회원가입 하려고 아이디와 비밀번호를 치고 회원가입 누르니까 이런 오류가 떠
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 파이어베이스 연결 오류 수정 요청 2 </summary>
+
+웹에 들어가서 F12 누르고 콘솔 확인 중인데 console.log('Firebase 함수들 대기 중... 100ms 후 재시도'); 이게 계속 떠
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 뷰 무한 전환 오류 수정 요청 </summary>
+
+뷰 숨김이랑 뷰 전환 성공 이게 계속 반복되는데 이건 무슨 오류야 고쳐줘
+</details>
+
+<details>
+<summary> cursor에게 웹에서의 로그인 화면 전환 오류 수정 요청 </summary>
+
+좋아 이제 로그인까지 성공이 됐어. 근데 로그인이 성공이 되더라도 로그인 화면 그대로야. 약간 로그인 뷰가 새로 켜진 것 같아. 이거 고쳐줘.
+</details>
+
+<details>
+<summary> cursor에게 홈화면 제작 요청 </summary>
+
+좋아 이제 로그인 후 퀴즈 화면까지 이어졌는데 홈화면을 만들고 싶어. 웹에 처음 접속하면 홈화면에 들어가지면서 랭킹 확인하는 버튼, 게임 시작하는 버튼, 로그인 하는 버튼이 있으면 좋겠어. 로그인을 하지 않고 퀴즈를 진행하게 되면 게스트(비로그인)으로 퀴즈를 진행하게 되는 거지. 또한 로그인이나 회원가입을 진행한 후에는 바로 퀴즈로 넘어가는 게 아닌 홈화면으로 이동됐으면 좋겠어.
+</details>
+
+<details>
+<summary> cursor에게 문제 랜덤 출제 요청 </summary>
+
+출제되는 문제 수를 10개로 줄이고, 준비 되어 있는 문제의 수는 늘려서 문제가 그 중 랜덤으로 출제 되도록 해줘. 퀴즈를 풀며 총 10개의 문제 중에 중복 되는 문제는 없어야 해.
+</details>
