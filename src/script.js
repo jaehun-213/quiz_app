@@ -124,6 +124,9 @@ const initializeApp = async () => {
         // 이벤트 리스너 설정
         setupEventListeners();
         
+        // 실시간 입력 검증 설정
+        setupRealTimeValidation();
+        
         // 퀴즈 데이터 로드
         loadQuizData();
         
@@ -398,19 +401,293 @@ const loadQuizData = () => {
     console.log('퀴즈 데이터 로드 완료:', quizQuestions.length, '개 문제');
 };
 
-// ===== 이벤트 핸들러 함수들 (다음 단계에서 구현) =====
-const handleLogin = (e) => {
+// ===== 인증 관련 함수들 =====
+
+// 로그인 처리 함수
+const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('로그인 처리 (구현 예정)');
+    
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+    
+    // 입력값 검증
+    if (!validateEmail(email)) {
+        showFormError('login', 'login-email', '올바른 이메일 형식을 입력해주세요.');
+        return;
+    }
+    
+    if (!validatePassword(password)) {
+        showFormError('login', 'login-password', '비밀번호는 6자리 이상이어야 합니다.');
+        return;
+    }
+    
+    try {
+        showLoading();
+        clearFormErrors('login');
+        
+        // Firebase 로그인
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        console.log('로그인 성공:', user.email);
+        showNotification('로그인에 성공했습니다!', 'success');
+        
+        // 폼 초기화
+        loginForm.reset();
+        
+    } catch (error) {
+        console.error('로그인 실패:', error);
+        handleAuthError(error, 'login');
+    } finally {
+        hideLoading();
+    }
 };
 
-const handleRegister = (e) => {
+// 회원가입 처리 함수
+const handleRegister = async (e) => {
     e.preventDefault();
-    console.log('회원가입 처리 (구현 예정)');
+    
+    const email = registerEmail.value.trim();
+    const password = registerPassword.value;
+    const confirmPassword = registerConfirm.value;
+    
+    // 입력값 검증
+    if (!validateEmail(email)) {
+        showFormError('register', 'register-email', '올바른 이메일 형식을 입력해주세요.');
+        return;
+    }
+    
+    if (!validatePassword(password)) {
+        showFormError('register', 'register-password', '비밀번호는 6자리 이상이어야 합니다.');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showFormError('register', 'register-confirm', '비밀번호가 일치하지 않습니다.');
+        return;
+    }
+    
+    try {
+        showLoading();
+        clearFormErrors('register');
+        
+        // Firebase 회원가입
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        console.log('회원가입 성공:', user.email);
+        showNotification('회원가입에 성공했습니다!', 'success');
+        
+        // 폼 초기화
+        registerForm.reset();
+        
+        // 로그인 뷰로 전환
+        showView('login-view');
+        
+    } catch (error) {
+        console.error('회원가입 실패:', error);
+        handleAuthError(error, 'register');
+    } finally {
+        hideLoading();
+    }
 };
 
-const handleLogout = () => {
-    console.log('로그아웃 처리 (구현 예정)');
+// 로그아웃 처리 함수
+const handleLogout = async () => {
+    try {
+        showLoading();
+        
+        // Firebase 로그아웃
+        await signOut(auth);
+        
+        console.log('로그아웃 성공');
+        showNotification('로그아웃되었습니다.', 'info');
+        
+        // 퀴즈 상태 초기화
+        resetQuizState();
+        
+    } catch (error) {
+        console.error('로그아웃 실패:', error);
+        showNotification('로그아웃에 실패했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+};
+
+// ===== 인증 유틸리티 함수들 =====
+
+// 이메일 형식 검증
+const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+// 비밀번호 검증 (6자리 이상)
+const validatePassword = (password) => {
+    return password && password.length >= 6;
+};
+
+// 폼 에러 표시
+const showFormError = (formType, fieldId, message) => {
+    const form = formType === 'login' ? loginForm : registerForm;
+    const field = document.getElementById(fieldId);
+    
+    if (form && field) {
+        // 기존 에러 메시지 제거
+        const existingError = form.querySelector(`#${fieldId}-error`);
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // 에러 스타일 적용
+        field.classList.add('error');
+        
+        // 에러 메시지 생성
+        const errorElement = document.createElement('div');
+        errorElement.id = `${fieldId}-error`;
+        errorElement.className = 'error-message';
+        errorElement.textContent = message;
+        errorElement.style.color = '#dc3545';
+        errorElement.style.fontSize = '0.875rem';
+        errorElement.style.marginTop = '0.25rem';
+        
+        // 필드 다음에 에러 메시지 삽입
+        field.parentNode.insertBefore(errorElement, field.nextSibling);
+    }
+};
+
+// 인증 에러 처리
+const handleAuthError = (error, formType) => {
+    let errorMessage = '알 수 없는 오류가 발생했습니다.';
+    
+    switch (error.code) {
+        case 'auth/user-not-found':
+            errorMessage = '등록되지 않은 이메일입니다.';
+            break;
+        case 'auth/wrong-password':
+            errorMessage = '잘못된 비밀번호입니다.';
+            break;
+        case 'auth/email-already-in-use':
+            errorMessage = '이미 사용 중인 이메일입니다.';
+            break;
+        case 'auth/weak-password':
+            errorMessage = '비밀번호가 너무 약합니다. 6자리 이상 입력해주세요.';
+            break;
+        case 'auth/invalid-email':
+            errorMessage = '올바른 이메일 형식이 아닙니다.';
+            break;
+        case 'auth/too-many-requests':
+            errorMessage = '너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.';
+            break;
+        case 'auth/network-request-failed':
+            errorMessage = '네트워크 연결을 확인해주세요.';
+            break;
+        default:
+            errorMessage = error.message || errorMessage;
+    }
+    
+    showNotification(errorMessage, 'error');
+    
+    // 폼 필드에 에러 표시
+    if (formType === 'login') {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            showFormError('login', 'login-email', errorMessage);
+        }
+    } else if (formType === 'register') {
+        if (error.code === 'auth/email-already-in-use') {
+            showFormError('register', 'register-email', errorMessage);
+        } else if (error.code === 'auth/weak-password') {
+            showFormError('register', 'register-password', errorMessage);
+        }
+    }
+};
+
+// 퀴즈 상태 초기화
+const resetQuizState = () => {
+    currentQuestionIndex = 0;
+    userScore = 0;
+    userAnswers = [];
+    quizStartTime = null;
+    
+    // UI 초기화
+    if (questionCounter) questionCounter.textContent = '문제 1 / 0';
+    if (progressFill) progressFill.style.width = '0%';
+    if (currentScore) currentScore.textContent = '0';
+    
+    // 답안 컨테이너 숨김
+    const answerContainers = [multipleChoice, fillInBlank, shortAnswer];
+    answerContainers.forEach(container => {
+        if (container) container.classList.add('hidden');
+    });
+    
+    // 버튼 상태 초기화
+    if (submitBtn) {
+        submitBtn.textContent = '제출';
+        submitBtn.classList.remove('hidden');
+    }
+    if (nextBtn) {
+        nextBtn.classList.add('hidden');
+    }
+};
+
+// 실시간 입력 검증
+const setupRealTimeValidation = () => {
+    // 비밀번호 실시간 검증
+    if (registerPassword) {
+        registerPassword.addEventListener('input', (e) => {
+            const password = e.target.value;
+            if (password.length > 0 && password.length < 6) {
+                showFormError('register', 'register-password', '비밀번호는 6자리 이상이어야 합니다.');
+            } else {
+                clearFieldError('register', 'register-password');
+            }
+        });
+    }
+    
+    // 비밀번호 확인 실시간 검증
+    if (registerConfirm) {
+        registerConfirm.addEventListener('input', (e) => {
+            const password = registerPassword.value;
+            const confirmPassword = e.target.value;
+            if (confirmPassword.length > 0 && password !== confirmPassword) {
+                showFormError('register', 'register-confirm', '비밀번호가 일치하지 않습니다.');
+            } else {
+                clearFieldError('register', 'register-confirm');
+            }
+        });
+    }
+    
+    // 이메일 실시간 검증
+    [loginEmail, registerEmail].forEach(emailField => {
+        if (emailField) {
+            emailField.addEventListener('blur', (e) => {
+                const email = e.target.value.trim();
+                const formType = emailField.id.includes('login') ? 'login' : 'register';
+                if (email.length > 0 && !validateEmail(email)) {
+                    showFormError(formType, emailField.id, '올바른 이메일 형식을 입력해주세요.');
+                } else {
+                    clearFieldError(formType, emailField.id);
+                }
+            });
+        }
+    });
+};
+
+// 개별 필드 에러 제거
+const clearFieldError = (formType, fieldId) => {
+    const form = formType === 'login' ? loginForm : registerForm;
+    const field = document.getElementById(fieldId);
+    
+    if (form && field) {
+        // 에러 메시지 제거
+        const errorElement = form.querySelector(`#${fieldId}-error`);
+        if (errorElement) {
+            errorElement.remove();
+        }
+        
+        // 에러 스타일 제거
+        field.classList.remove('error');
+    }
 };
 
 const handleSubmitAnswer = () => {
