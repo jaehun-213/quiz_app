@@ -190,25 +190,67 @@
 
     <!-- Firebase SDK CDN -->
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        // Firebase 설정 확인 및 초기화
+        let auth, db;
+        let createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged;
+        let collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp;
         
-        // Firebase 설정
-        const firebaseConfig = {
-            apiKey: "AIzaSyD_y2djj8OZIp98S7VSoZm8-6c0pI819Po",
-            authDomain: "quiz-app-e4a22.firebaseapp.com",
-            projectId: "quiz-app-e4a22",
-            storageBucket: "quiz-app-e4a22.firebasestorage.app",
-            messagingSenderId: "325550263667",
-            appId: "1:325550263667:web:41769ba5105bda8d4d0906",
-            measurementId: "G-L6T84FBYJN"
-        };
-        
-        // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        try {
+            // Firebase 모듈 동적 import
+            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+            const { getAuth, createUserWithEmailAndPassword: createUser, signInWithEmailAndPassword: signIn, signOut: signOutUser, onAuthStateChanged: onAuthState } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+            const { getFirestore, collection: getCollection, addDoc: addDocument, getDocs: getDocuments, query: getQuery, orderBy: orderByField, limit: limitTo, serverTimestamp: serverTime } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            // Firebase 설정 (데모용 - 실제 사용 시에는 본인의 Firebase 프로젝트 설정을 사용하세요)
+            const firebaseConfig = {
+                apiKey: "AIzaSyD_y2djj8OZIp98S7VSoZm8-6c0pI819Po",
+                authDomain: "quiz-app-e4a22.firebaseapp.com",
+                projectId: "quiz-app-e4a22",
+                storageBucket: "quiz-app-e4a22.firebasestorage.app",
+                messagingSenderId: "325550263667",
+                appId: "1:325550263667:web:41769ba5105bda8d4d0906",
+                measurementId: "G-L6T84FBYJN"
+            };
+            
+            // Firebase 초기화
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            // 함수들 할당
+            createUserWithEmailAndPassword = createUser;
+            signInWithEmailAndPassword = signIn;
+            signOut = signOutUser;
+            onAuthStateChanged = onAuthState;
+            collection = getCollection;
+            addDoc = addDocument;
+            getDocs = getDocuments;
+            query = getQuery;
+            orderBy = orderByField;
+            limit = limitTo;
+            serverTimestamp = serverTime;
+            
+            console.log('Firebase 초기화 성공');
+            
+        } catch (error) {
+            console.error('Firebase 초기화 실패:', error);
+            console.log('Firebase 없이 로컬 모드로 실행합니다.');
+            
+            // Firebase 없이 작동하는 모의 함수들
+            auth = null;
+            db = null;
+            createUserWithEmailAndPassword = mockCreateUser;
+            signInWithEmailAndPassword = mockSignIn;
+            signOut = mockSignOut;
+            onAuthStateChanged = mockOnAuthStateChanged;
+            collection = mockCollection;
+            addDoc = mockAddDoc;
+            getDocs = mockGetDocs;
+            query = mockQuery;
+            orderBy = mockOrderBy;
+            limit = mockLimit;
+            serverTimestamp = mockServerTimestamp;
+        }
         
         // 전역 변수로 설정
         window.auth = auth;
@@ -224,6 +266,107 @@
         window.orderBy = orderBy;
         window.limit = limit;
         window.serverTimestamp = serverTimestamp;
+        
+        // Firebase 없이 작동하는 모의 함수들
+        function mockCreateUser(auth, email, password) {
+            return new Promise((resolve, reject) => {
+                // 로컬 스토리지에 사용자 정보 저장
+                const user = {
+                    uid: 'local_' + Date.now(),
+                    email: email,
+                    emailVerified: true
+                };
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                resolve({ user });
+            });
+        }
+        
+        function mockSignIn(auth, email, password) {
+            return new Promise((resolve, reject) => {
+                // 로컬 스토리지에서 사용자 확인
+                const storedUser = localStorage.getItem('currentUser');
+                if (storedUser) {
+                    const user = JSON.parse(storedUser);
+                    if (user.email === email) {
+                        resolve({ user });
+                    } else {
+                        reject(new Error('auth/user-not-found'));
+                    }
+                } else {
+                    reject(new Error('auth/user-not-found'));
+                }
+            });
+        }
+        
+        function mockSignOut(auth) {
+            return new Promise((resolve) => {
+                localStorage.removeItem('currentUser');
+                resolve();
+            });
+        }
+        
+        function mockOnAuthStateChanged(auth, callback) {
+            // 즉시 현재 상태 확인
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                callback(JSON.parse(storedUser));
+            } else {
+                callback(null);
+            }
+            // 변경 감지를 위한 간단한 폴링
+            setInterval(() => {
+                const currentUser = localStorage.getItem('currentUser');
+                if (currentUser) {
+                    callback(JSON.parse(currentUser));
+                } else {
+                    callback(null);
+                }
+            }, 1000);
+        }
+        
+        function mockCollection(db, collectionName) {
+            return { _path: collectionName };
+        }
+        
+        function mockAddDoc(collectionRef, data) {
+            return new Promise((resolve) => {
+                const id = 'doc_' + Date.now();
+                const docData = { ...data, id };
+                const key = collectionRef._path + '_' + id;
+                localStorage.setItem(key, JSON.stringify(docData));
+                resolve({ id });
+            });
+        }
+        
+        function mockGetDocs(queryRef) {
+            return new Promise((resolve) => {
+                const docs = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith(queryRef._path + '_')) {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        docs.push({ id: data.id, data: () => data });
+                    }
+                }
+                resolve({ forEach: (callback) => docs.forEach(callback), empty: docs.length === 0 });
+            });
+        }
+        
+        function mockQuery(collectionRef, ...constraints) {
+            return collectionRef;
+        }
+        
+        function mockOrderBy(field, direction) {
+            return { field, direction };
+        }
+        
+        function mockLimit(count) {
+            return { count };
+        }
+        
+        function mockServerTimestamp() {
+            return new Date();
+        }
     </script>
     
     <!-- 메인 스크립트 -->

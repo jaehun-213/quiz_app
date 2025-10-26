@@ -1,1 +1,5 @@
+# Firebase 설정 파일 숨기기
 src/firebase-config.js
+
+# npm 패키지 폴더 숨기기
+node_modules/
