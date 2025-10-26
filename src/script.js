@@ -258,9 +258,10 @@ const clearFormErrors = (formType) => {
     }
 };
 
-// 퀴즈 초기화 (다음 단계에서 구현)
+// 퀴즈 초기화
 const initializeQuiz = () => {
-    console.log('퀴즈 초기화 (구현 예정)');
+    console.log('퀴즈 초기화');
+    
     // 퀴즈 상태 초기화
     currentQuestionIndex = 0;
     userScore = 0;
@@ -270,6 +271,14 @@ const initializeQuiz = () => {
     // UI 초기화
     updateQuizProgress();
     updateScoreDisplay();
+    
+    // 첫 번째 문제 로드
+    if (quizQuestions.length > 0) {
+        loadCurrentQuestion();
+    } else {
+        console.error('퀴즈 데이터가 없습니다.');
+        showNotification('퀴즈 데이터를 불러올 수 없습니다.', 'error');
+    }
 };
 
 // 결과 표시 (다음 단계에서 구현)
@@ -519,10 +528,316 @@ const shouldRedirectToQuiz = (currentView) => {
     return true;
 };
 
-// 현재 문제 로드 (다음 단계에서 구현)
+// ===== 퀴즈 엔진 핵심 함수들 =====
+
+// 현재 문제 로드 함수
 const loadCurrentQuestion = () => {
-    console.log('현재 문제 로드 (구현 예정)');
-    // 퀴즈 문제 로드 로직
+    if (quizQuestions.length === 0) {
+        console.error('퀴즈 데이터가 없습니다.');
+        showNotification('퀴즈 데이터를 불러올 수 없습니다.', 'error');
+        return;
+    }
+    
+    if (currentQuestionIndex >= quizQuestions.length) {
+        console.log('모든 문제를 완료했습니다.');
+        showQuizResults();
+        return;
+    }
+    
+    const question = quizQuestions[currentQuestionIndex];
+    console.log(`문제 ${currentQuestionIndex + 1} 로드:`, question);
+    
+    // 문제 로드
+    loadQuiz(question);
+};
+
+// 퀴즈 문제 로드 및 렌더링
+const loadQuiz = (question) => {
+    try {
+        // 문제 텍스트 표시
+        displayQuestionText(question);
+        
+        // 코드 블록 처리
+        displayCodeBlock(question);
+        
+        // 답안 컨테이너 초기화
+        clearAnswerContainers();
+        
+        // 문제 타입에 따른 답안 UI 생성
+        switch (question.type) {
+            case 'multiple-choice':
+                createMultipleChoiceUI(question);
+                break;
+            case 'fill-in-blank':
+                createFillInBlankUI(question);
+                break;
+            case 'short-answer':
+                createShortAnswerUI(question);
+                break;
+            default:
+                console.error('알 수 없는 문제 타입:', question.type);
+                showNotification('알 수 없는 문제 타입입니다.', 'error');
+        }
+        
+        // UI 상태 업데이트
+        updateQuizUI(question);
+        
+        // 진행률 업데이트
+        updateQuizProgress();
+        
+    } catch (error) {
+        console.error('퀴즈 로드 중 오류:', error);
+        showNotification('문제를 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+};
+
+// 문제 텍스트 표시
+const displayQuestionText = (question) => {
+    if (questionText) {
+        questionText.textContent = question.question;
+    }
+};
+
+// 코드 블록 표시
+const displayCodeBlock = (question) => {
+    if (questionCode && codeContent) {
+        // 코드가 포함된 문제인지 확인
+        const hasCode = question.question.includes('```') || 
+                       (question.modelAnswer && question.modelAnswer.includes('```'));
+        
+        if (hasCode) {
+            // 코드 블록 추출 및 표시
+            const codeMatch = question.question.match(/```(\w+)?\n([\s\S]*?)```/);
+            if (codeMatch) {
+                const language = codeMatch[1] || 'javascript';
+                const code = codeMatch[2].trim();
+                
+                codeContent.textContent = code;
+                codeContent.className = `language-${language}`;
+                questionCode.classList.remove('hidden');
+            } else {
+                questionCode.classList.add('hidden');
+            }
+        } else {
+            questionCode.classList.add('hidden');
+        }
+    }
+};
+
+// 답안 컨테이너 초기화
+const clearAnswerContainers = () => {
+    const containers = [multipleChoice, fillInBlank, shortAnswer];
+    containers.forEach(container => {
+        if (container) {
+            container.classList.add('hidden');
+            // 기존 내용 제거
+            const content = container.querySelector('.options-list, .blank-container, .textarea-container');
+            if (content) {
+                content.innerHTML = '';
+            }
+        }
+    });
+};
+
+// 객관식 UI 생성
+const createMultipleChoiceUI = (question) => {
+    if (!multipleChoice || !question.options) return;
+    
+    const optionsList = multipleChoice.querySelector('.options-list');
+    if (!optionsList) return;
+    
+    // 기존 옵션 제거
+    optionsList.innerHTML = '';
+    
+    // 옵션 생성
+    question.options.forEach((option, index) => {
+        const optionItem = document.createElement('div');
+        optionItem.className = 'option-item';
+        
+        const radioInput = document.createElement('input');
+        radioInput.type = 'radio';
+        radioInput.name = 'quiz-option';
+        radioInput.id = `option-${index}`;
+        radioInput.value = index;
+        
+        const label = document.createElement('label');
+        label.htmlFor = `option-${index}`;
+        label.textContent = option;
+        
+        optionItem.appendChild(radioInput);
+        optionItem.appendChild(label);
+        optionsList.appendChild(optionItem);
+        
+        // 옵션 클릭 이벤트
+        optionItem.addEventListener('click', () => {
+            radioInput.checked = true;
+            updateSubmitButton();
+        });
+    });
+    
+    multipleChoice.classList.remove('hidden');
+};
+
+// 빈칸 채우기 UI 생성
+const createFillInBlankUI = (question) => {
+    if (!fillInBlank || !blankInput) return;
+    
+    const blankContainer = fillInBlank.querySelector('.blank-container');
+    if (!blankContainer) return;
+    
+    // 입력 필드 초기화
+    blankInput.value = '';
+    blankInput.placeholder = '답을 입력하세요';
+    
+    // 입력 이벤트
+    blankInput.addEventListener('input', () => {
+        updateSubmitButton();
+    });
+    
+    // Enter 키 이벤트
+    blankInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            handleSubmitAnswer();
+        }
+    });
+    
+    fillInBlank.classList.remove('hidden');
+};
+
+// 서술형 UI 생성
+const createShortAnswerUI = (question) => {
+    if (!shortAnswer || !answerTextarea) return;
+    
+    const textareaContainer = shortAnswer.querySelector('.textarea-container');
+    if (!textareaContainer) return;
+    
+    // 텍스트 영역 초기화
+    answerTextarea.value = '';
+    answerTextarea.placeholder = '답을 입력하세요';
+    
+    // 입력 이벤트
+    answerTextarea.addEventListener('input', () => {
+        updateSubmitButton();
+    });
+    
+    shortAnswer.classList.remove('hidden');
+};
+
+// 퀴즈 UI 상태 업데이트
+const updateQuizUI = (question) => {
+    // 버튼 상태 초기화
+    if (submitBtn) {
+        submitBtn.textContent = '제출';
+        submitBtn.classList.remove('hidden');
+        submitBtn.disabled = true;
+    }
+    
+    if (nextBtn) {
+        nextBtn.classList.add('hidden');
+    }
+    
+    // 제출 버튼 활성화 상태 업데이트
+    updateSubmitButton();
+};
+
+// 제출 버튼 활성화 상태 업데이트
+const updateSubmitButton = () => {
+    if (!submitBtn) return;
+    
+    const question = quizQuestions[currentQuestionIndex];
+    if (!question) return;
+    
+    let hasAnswer = false;
+    
+    switch (question.type) {
+        case 'multiple-choice':
+            const selectedOption = document.querySelector('input[name="quiz-option"]:checked');
+            hasAnswer = selectedOption !== null;
+            break;
+            
+        case 'fill-in-blank':
+            hasAnswer = blankInput.value.trim().length > 0;
+            break;
+            
+        case 'short-answer':
+            hasAnswer = answerTextarea.value.trim().length > 0;
+            break;
+    }
+    
+    submitBtn.disabled = !hasAnswer;
+};
+
+// 사용자 답안 가져오기
+const getUserAnswer = () => {
+    const question = quizQuestions[currentQuestionIndex];
+    if (!question) return null;
+    
+    switch (question.type) {
+        case 'multiple-choice':
+            const selectedOption = document.querySelector('input[name="quiz-option"]:checked');
+            return selectedOption ? parseInt(selectedOption.value) : null;
+            
+        case 'fill-in-blank':
+            return blankInput ? blankInput.value.trim() : null;
+            
+        case 'short-answer':
+            return answerTextarea ? answerTextarea.value.trim() : null;
+            
+        default:
+            return null;
+    }
+};
+
+// 답안 저장
+const saveUserAnswer = (answer) => {
+    const question = quizQuestions[currentQuestionIndex];
+    if (!question) return;
+    
+    userAnswers[currentQuestionIndex] = {
+        questionId: question.id,
+        answer: answer,
+        isCorrect: checkAnswer(question, answer),
+        timestamp: new Date()
+    };
+    
+    console.log('답안 저장:', userAnswers[currentQuestionIndex]);
+};
+
+// 답안 채점
+const checkAnswer = (question, userAnswer) => {
+    if (userAnswer === null || userAnswer === undefined) return false;
+    
+    switch (question.type) {
+        case 'multiple-choice':
+            return userAnswer === question.correctAnswer;
+            
+        case 'fill-in-blank':
+            // 대소문자 구분 없이 비교
+            const correctAnswer = question.correctAnswer.toLowerCase().trim();
+            const userAnswerLower = userAnswer.toLowerCase().trim();
+            return correctAnswer === userAnswerLower;
+            
+        case 'short-answer':
+            // 서술형은 자가 채점이므로 항상 true (사용자가 직접 확인)
+            return true;
+            
+        default:
+            return false;
+    }
+};
+
+// 점수 업데이트
+const updateScore = (isCorrect) => {
+    if (isCorrect) {
+        userScore += 10; // 문제당 10점
+        updateScoreDisplay();
+    }
+};
+
+// 퀴즈 결과 표시
+const showQuizResults = () => {
+    console.log('퀴즈 완료!');
+    showView('results-view');
 };
 
 // 인증 상태 확인 함수
