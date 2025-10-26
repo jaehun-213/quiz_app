@@ -181,14 +181,19 @@ const showView = (viewId) => {
     
     // 모든 뷰 숨김
     const views = [loginView, registerView, quizView, resultsView, rankingView];
+    console.log('현재 뷰들:', views.map(v => v ? v.id : 'null'));
+    
     views.forEach(view => {
         if (view) {
             view.classList.add('hidden');
+            console.log(`뷰 숨김: ${view.id}`);
         }
     });
     
     // 선택된 뷰만 표시
     const targetView = document.getElementById(viewId);
+    console.log('대상 뷰:', targetView);
+    
     if (targetView) {
         targetView.classList.remove('hidden');
         console.log(`뷰 전환 성공: ${viewId}`);
@@ -1227,10 +1232,13 @@ const loadQuizData = () => {
 
 // 로그인 처리 함수
 const handleLogin = async (e) => {
+    console.log('로그인 함수 호출됨');
     e.preventDefault();
     
     const email = loginEmail.value.trim();
     const password = loginPassword.value;
+    
+    console.log('로그인 입력값:', { email, password: password.length });
     
     // 입력값 검증
     if (!validateEmail(email)) {
@@ -1267,11 +1275,14 @@ const handleLogin = async (e) => {
 
 // 회원가입 처리 함수
 const handleRegister = async (e) => {
+    console.log('회원가입 함수 호출됨');
     e.preventDefault();
     
     const email = registerEmail.value.trim();
     const password = registerPassword.value;
     const confirmPassword = registerConfirm.value;
+    
+    console.log('입력값:', { email, password: password.length, confirmPassword: confirmPassword.length });
     
     // 입력값 검증
     if (!validateEmail(email)) {
