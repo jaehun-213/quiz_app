@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT 기술 퀴즈 앱</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <!-- 메인 컨테이너 -->
+    <main class="app-container">
+        <!-- 헤더 섹션 -->
+        <header class="app-header">
+            <h1 class="app-title">IT 기술 퀴즈</h1>
+            <nav class="user-nav">
+                <span id="user-info" class="user-info hidden"></span>
+                <button id="logout-btn" class="btn btn-secondary hidden">로그아웃</button>
+            </nav>
+        </header>
+
+        <!-- 로그인 뷰 -->
+        <section id="login-view" class="view">
+            <div class="login-container">
+                <h2 class="view-title">로그인</h2>
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-email">이메일</label>
+                        <input type="email" id="login-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">비밀번호</label>
+                        <input type="password" id="login-password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">로그인</button>
+                </form>
+                
+                <div class="auth-divider">
+                    <span>또는</span>
+                </div>
+                
+                <button id="show-register" class="btn btn-outline">회원가입</button>
+            </div>
+        </section>
+
+        <!-- 회원가입 뷰 -->
+        <section id="register-view" class="view hidden">
+            <div class="register-container">
+                <h2 class="view-title">회원가입</h2>
+                <form id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="register-email">이메일</label>
+                        <input type="email" id="register-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">비밀번호</label>
+                        <input type="password" id="register-password" name="password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm">비밀번호 확인</label>
+                        <input type="password" id="register-confirm" name="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">회원가입</button>
+                </form>
+                
+                <div class="auth-divider">
+                    <span>또는</span>
+                </div>
+                
+                <button id="show-login" class="btn btn-outline">로그인</button>
+            </div>
+        </section>
+
+        <!-- 퀴즈 뷰 -->
+        <section id="quiz-view" class="view hidden">
+            <div class="quiz-container">
+                <!-- 퀴즈 헤더 -->
+                <div class="quiz-header">
+                    <div class="quiz-progress">
+                        <span id="question-counter">문제 1 / 10</span>
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                    </div>
+                    <div class="quiz-score">
+                        <span>점수: <span id="current-score">0</span></span>
+                    </div>
+                </div>
+
+                <!-- 퀴즈 콘텐츠 -->
+                <div class="quiz-content">
+                    <div class="question-container">
+                        <h3 id="question-text" class="question-text"></h3>
+                        <div id="question-code" class="question-code hidden">
+                            <pre><code id="code-content"></code></pre>
+                        </div>
+                    </div>
+
+                    <!-- 객관식 답안 -->
+                    <div id="multiple-choice" class="answer-container hidden">
+                        <div class="options-list">
+                            <!-- 동적으로 생성될 옵션들 -->
+                        </div>
+                    </div>
+
+                    <!-- 빈칸 채우기 답안 -->
+                    <div id="fill-in-blank" class="answer-container hidden">
+                        <div class="blank-container">
+                            <input type="text" id="blank-input" class="blank-input" placeholder="답을 입력하세요">
+                        </div>
+                    </div>
+
+                    <!-- 서술형 답안 -->
+                    <div id="short-answer" class="answer-container hidden">
+                        <div class="textarea-container">
+                            <textarea id="answer-textarea" class="answer-textarea" placeholder="답을 입력하세요"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 퀴즈 액션 버튼 -->
+                <div class="quiz-actions">
+                    <button id="submit-btn" class="btn btn-primary">제출</button>
+                    <button id="next-btn" class="btn btn-secondary hidden">다음 문제</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 결과 뷰 -->
+        <section id="results-view" class="view hidden">
+            <div class="results-container">
+                <h2 class="view-title">퀴즈 결과</h2>
+                <div class="score-display">
+                    <div class="final-score">
+                        <span class="score-label">최종 점수</span>
+                        <span id="final-score" class="score-value">0</span>
+                    </div>
+                    <div class="score-details">
+                        <p>정답: <span id="correct-count">0</span> / <span id="total-questions">0</span></p>
+                        <p>정답률: <span id="accuracy">0</span>%</p>
+                    </div>
+                </div>
+                
+                <div class="results-actions">
+                    <button id="retry-quiz" class="btn btn-primary">다시 풀기</button>
+                    <button id="view-ranking" class="btn btn-secondary">랭킹 보기</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 랭킹 뷰 -->
+        <section id="ranking-view" class="view hidden">
+            <div class="ranking-container">
+                <h2 class="view-title">실시간 랭킹</h2>
+                <div class="ranking-header">
+                    <button id="refresh-ranking" class="btn btn-outline">새로고침</button>
+                    <span class="last-updated">마지막 업데이트: <span id="last-updated-time">-</span></span>
+                </div>
+                
+                <div class="ranking-list">
+                    <div class="ranking-item ranking-header-item">
+                        <span class="rank">순위</span>
+                        <span class="user">사용자</span>
+                        <span class="score">점수</span>
+                        <span class="date">날짜</span>
+                    </div>
+                    <div id="ranking-list-content">
+                        <!-- 동적으로 생성될 랭킹 리스트 -->
+                    </div>
+                </div>
+                
+                <div class="ranking-actions">
+                    <button id="back-to-quiz" class="btn btn-primary">퀴즈 풀기</button>
+                    <button id="back-to-home" class="btn btn-secondary">홈으로</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 로딩 오버레이 -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">로딩 중...</p>
+    </div>
+
+    <!-- 알림 메시지 -->
+    <div id="notification" class="notification hidden">
+        <span id="notification-message"></span>
+        <button id="close-notification" class="close-btn">&times;</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
