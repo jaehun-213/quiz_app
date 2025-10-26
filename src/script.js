@@ -803,36 +803,6 @@ const saveUserAnswer = (answer) => {
     console.log('답안 저장:', userAnswers[currentQuestionIndex]);
 };
 
-// 답안 채점
-const checkAnswer = (question, userAnswer) => {
-    if (userAnswer === null || userAnswer === undefined) return false;
-    
-    switch (question.type) {
-        case 'multiple-choice':
-            return userAnswer === question.correctAnswer;
-            
-        case 'fill-in-blank':
-            // 대소문자 구분 없이 비교
-            const correctAnswer = question.correctAnswer.toLowerCase().trim();
-            const userAnswerLower = userAnswer.toLowerCase().trim();
-            return correctAnswer === userAnswerLower;
-            
-        case 'short-answer':
-            // 서술형은 자가 채점이므로 항상 true (사용자가 직접 확인)
-            return true;
-            
-        default:
-            return false;
-    }
-};
-
-// 점수 업데이트
-const updateScore = (isCorrect) => {
-    if (isCorrect) {
-        userScore += 10; // 문제당 10점
-        updateScoreDisplay();
-    }
-};
 
 // 퀴즈 결과 표시
 const showQuizResults = () => {
@@ -1314,12 +1284,258 @@ const clearFieldError = (formType, fieldId) => {
     }
 };
 
+// ===== 퀴즈 제출 및 채점 로직 =====
+
+// 답안 제출 처리
 const handleSubmitAnswer = () => {
-    console.log('답안 제출 처리 (구현 예정)');
+    const question = quizQuestions[currentQuestionIndex];
+    if (!question) {
+        console.error('현재 문제를 찾을 수 없습니다.');
+        return;
+    }
+    
+    // 사용자 답안 가져오기
+    const userAnswer = getUserAnswer();
+    if (userAnswer === null || userAnswer === undefined) {
+        showNotification('답을 선택하거나 입력해주세요.', 'warning');
+        return;
+    }
+    
+    console.log('답안 제출:', userAnswer);
+    
+    // 답안 저장
+    saveUserAnswer(userAnswer);
+    
+    // 채점 및 피드백 표시
+    const isCorrect = checkAnswer(question, userAnswer);
+    showAnswerFeedback(question, userAnswer, isCorrect);
+    
+    // 점수 업데이트
+    updateScore(isCorrect);
+    
+    // 버튼 상태 변경 (제출 → 다음)
+    updateSubmitButtonToNext();
+    
+    // 서술형인 경우 모범 답안 표시
+    if (question.type === 'short-answer' && question.modelAnswer) {
+        showModelAnswer(question);
+    }
 };
 
+// 다음 문제 처리
 const handleNextQuestion = () => {
-    console.log('다음 문제 처리 (구현 예정)');
+    // 다음 문제로 이동
+    currentQuestionIndex++;
+    
+    // 진행률 업데이트
+    updateQuizProgress();
+    
+    // 다음 문제가 있는지 확인
+    if (currentQuestionIndex < quizQuestions.length) {
+        // 다음 문제 로드
+        loadCurrentQuestion();
+    } else {
+        // 모든 문제 완료
+        showQuizResults();
+    }
+};
+
+// 답안 피드백 표시
+const showAnswerFeedback = (question, userAnswer, isCorrect) => {
+    const questionElement = questionText;
+    if (!questionElement) return;
+    
+    // 기존 피드백 제거
+    clearAnswerFeedback();
+    
+    // 피드백 컨테이너 생성
+    const feedbackContainer = document.createElement('div');
+    feedbackContainer.className = 'answer-feedback';
+    feedbackContainer.style.marginTop = '1rem';
+    feedbackContainer.style.padding = '1rem';
+    feedbackContainer.style.borderRadius = '8px';
+    feedbackContainer.style.border = '2px solid';
+    
+    if (isCorrect) {
+        feedbackContainer.classList.add('correct');
+        feedbackContainer.style.backgroundColor = '#d4edda';
+        feedbackContainer.style.borderColor = '#c3e6cb';
+        feedbackContainer.style.color = '#155724';
+        
+        const correctIcon = document.createElement('span');
+        correctIcon.textContent = '✓ ';
+        correctIcon.style.fontWeight = 'bold';
+        correctIcon.style.fontSize = '1.2em';
+        feedbackContainer.appendChild(correctIcon);
+        
+        const correctText = document.createElement('span');
+        correctText.textContent = '정답입니다!';
+        correctText.style.fontWeight = 'bold';
+        feedbackContainer.appendChild(correctText);
+    } else {
+        feedbackContainer.classList.add('incorrect');
+        feedbackContainer.style.backgroundColor = '#f8d7da';
+        feedbackContainer.style.borderColor = '#f5c6cb';
+        feedbackContainer.style.color = '#721c24';
+        
+        const incorrectIcon = document.createElement('span');
+        incorrectIcon.textContent = '✗ ';
+        incorrectIcon.style.fontWeight = 'bold';
+        incorrectIcon.style.fontSize = '1.2em';
+        feedbackContainer.appendChild(incorrectIcon);
+        
+        const incorrectText = document.createElement('span');
+        incorrectText.textContent = '틀렸습니다.';
+        incorrectText.style.fontWeight = 'bold';
+        feedbackContainer.appendChild(incorrectText);
+        
+        // 정답 표시 (객관식, 빈칸 채우기)
+        if (question.type === 'multiple-choice') {
+            const correctAnswerText = document.createElement('div');
+            correctAnswerText.style.marginTop = '0.5rem';
+            correctAnswerText.innerHTML = `<strong>정답:</strong> ${question.options[question.correctAnswer]}`;
+            feedbackContainer.appendChild(correctAnswerText);
+        } else if (question.type === 'fill-in-blank') {
+            const correctAnswerText = document.createElement('div');
+            correctAnswerText.style.marginTop = '0.5rem';
+            correctAnswerText.innerHTML = `<strong>정답:</strong> ${question.correctAnswer}`;
+            feedbackContainer.appendChild(correctAnswerText);
+        }
+    }
+    
+    // 해설 표시
+    if (question.explanation) {
+        const explanationDiv = document.createElement('div');
+        explanationDiv.style.marginTop = '0.5rem';
+        explanationDiv.style.fontSize = '0.9em';
+        explanationDiv.innerHTML = `<strong>해설:</strong> ${question.explanation}`;
+        feedbackContainer.appendChild(explanationDiv);
+    }
+    
+    // 문제 텍스트 다음에 피드백 삽입
+    questionElement.parentNode.insertBefore(feedbackContainer, questionElement.nextSibling);
+    
+    // 선택된 옵션 하이라이트 (객관식)
+    if (question.type === 'multiple-choice') {
+        highlightSelectedOption(userAnswer, isCorrect);
+    }
+};
+
+// 선택된 옵션 하이라이트
+const highlightSelectedOption = (selectedIndex, isCorrect) => {
+    const selectedOption = document.querySelector(`input[name="quiz-option"]:checked`);
+    if (selectedOption) {
+        const optionItem = selectedOption.closest('.option-item');
+        if (optionItem) {
+            if (isCorrect) {
+                optionItem.classList.add('correct');
+            } else {
+                optionItem.classList.add('incorrect');
+            }
+        }
+    }
+};
+
+// 모범 답안 표시 (서술형)
+const showModelAnswer = (question) => {
+    if (!question.modelAnswer) return;
+    
+    const modelAnswerContainer = document.createElement('div');
+    modelAnswerContainer.className = 'model-answer';
+    modelAnswerContainer.style.marginTop = '1rem';
+    modelAnswerContainer.style.padding = '1rem';
+    modelAnswerContainer.style.backgroundColor = '#d1ecf1';
+    modelAnswerContainer.style.border = '2px solid #bee5eb';
+    modelAnswerContainer.style.borderRadius = '8px';
+    modelAnswerContainer.style.color = '#0c5460';
+    
+    const modelAnswerTitle = document.createElement('div');
+    modelAnswerTitle.innerHTML = '<strong>📝 모범 답안:</strong>';
+    modelAnswerTitle.style.marginBottom = '0.5rem';
+    modelAnswerContainer.appendChild(modelAnswerTitle);
+    
+    const modelAnswerContent = document.createElement('div');
+    modelAnswerContent.style.whiteSpace = 'pre-line';
+    modelAnswerContent.style.fontFamily = 'monospace';
+    modelAnswerContent.style.fontSize = '0.9em';
+    modelAnswerContent.style.lineHeight = '1.4';
+    modelAnswerContent.textContent = question.modelAnswer;
+    modelAnswerContainer.appendChild(modelAnswerContent);
+    
+    // 문제 텍스트 다음에 모범 답안 삽입
+    const questionElement = questionText;
+    if (questionElement) {
+        questionElement.parentNode.insertBefore(modelAnswerContainer, questionElement.nextSibling);
+    }
+};
+
+// 답안 피드백 제거
+const clearAnswerFeedback = () => {
+    const existingFeedback = document.querySelector('.answer-feedback');
+    if (existingFeedback) {
+        existingFeedback.remove();
+    }
+    
+    const existingModelAnswer = document.querySelector('.model-answer');
+    if (existingModelAnswer) {
+        existingModelAnswer.remove();
+    }
+    
+    // 옵션 하이라이트 제거
+    const highlightedOptions = document.querySelectorAll('.option-item.correct, .option-item.incorrect');
+    highlightedOptions.forEach(option => {
+        option.classList.remove('correct', 'incorrect');
+    });
+};
+
+// 제출 버튼을 다음 버튼으로 변경
+const updateSubmitButtonToNext = () => {
+    if (submitBtn) {
+        submitBtn.textContent = '다음 문제';
+        submitBtn.classList.remove('hidden');
+        submitBtn.disabled = false;
+    }
+    
+    if (nextBtn) {
+        nextBtn.classList.add('hidden');
+    }
+};
+
+// 개선된 답안 채점 로직
+const checkAnswer = (question, userAnswer) => {
+    if (userAnswer === null || userAnswer === undefined) return false;
+    
+    switch (question.type) {
+        case 'multiple-choice':
+            return userAnswer === question.correctAnswer;
+            
+        case 'fill-in-blank':
+            // trim()과 toLowerCase() 적용하여 비교
+            const correctAnswer = question.correctAnswer.trim().toLowerCase();
+            const userAnswerProcessed = userAnswer.trim().toLowerCase();
+            return correctAnswer === userAnswerProcessed;
+            
+        case 'short-answer':
+            // 서술형은 자가 채점이므로 항상 true
+            return true;
+            
+        default:
+            return false;
+    }
+};
+
+// 개선된 점수 업데이트
+const updateScore = (isCorrect) => {
+    if (isCorrect) {
+        userScore += 10; // 문제당 10점
+        updateScoreDisplay();
+        
+        // 정답 알림
+        showNotification('정답입니다! +10점', 'success');
+    } else {
+        // 오답 알림
+        showNotification('틀렸습니다. 다음 문제로 넘어가세요.', 'warning');
+    }
 };
 
 const handleRetryQuiz = () => {

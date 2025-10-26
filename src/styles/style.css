@@ -331,6 +331,18 @@ body {
     background: #f8f9ff;
 }
 
+.option-item.correct {
+    background-color: #d4edda !important;
+    border-color: #c3e6cb !important;
+    color: #155724 !important;
+}
+
+.option-item.incorrect {
+    background-color: #f8d7da !important;
+    border-color: #f5c6cb !important;
+    color: #721c24 !important;
+}
+
 .option-item input[type="radio"] {
     margin-right: 0.75rem;
     transform: scale(1.2);
